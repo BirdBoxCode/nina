@@ -35,13 +35,13 @@ export function MainSplitHero() {
 
   return (
     <div 
-      className="relative h-screen w-full flex flex-col md:flex-row overflow-hidden bg-black"
+      className="relative h-screen w-full flex flex-row overflow-hidden bg-black"
       onMouseMove={handleMouseMove}
       onMouseLeave={() => { x.set(0); y.set(0); setHoveredSide(null) }}
     >
       {/* LEFT PANEL - ART */}
       <motion.div
-        className="relative h-1/2 md:h-full w-full md:w-1/2 overflow-hidden cursor-pointer group border-b md:border-b-0 md:border-r border-neutral-800"
+        className="relative h-full w-1/2 overflow-hidden cursor-pointer group border-r border-neutral-800"
         initial={{ x: '-100%' }}
         animate={{ 
           x: '0%',
@@ -63,7 +63,7 @@ export function MainSplitHero() {
         
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 pointer-events-none">
           <motion.h2 
-            className="text-6xl md:text-8xl font-bold tracking-tighter mix-blend-overlay"
+            className="text-4xl md:text-8xl font-bold tracking-tighter mix-blend-overlay"
             layoutId="art-title"
           >
             ART
@@ -80,7 +80,7 @@ export function MainSplitHero() {
 
       {/* CENTER SEAM */}
       <motion.div 
-        className="hidden md:block absolute top-0 bottom-0 left-1/2 w-px bg-white/50 z-20 shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+        className="absolute top-0 bottom-0 left-1/2 w-px bg-white/50 z-20 shadow-[0_0_15px_rgba(255,255,255,0.5)]"
         initial={{ height: 0 }}
         animate={{ 
           height: '100%',
@@ -91,7 +91,7 @@ export function MainSplitHero() {
 
       {/* RIGHT PANEL - TATTOO */}
       <motion.div
-        className="relative h-1/2 md:h-full w-full md:w-1/2 overflow-hidden cursor-pointer group"
+        className="relative h-full w-1/2 overflow-hidden cursor-pointer group"
         initial={{ x: '100%' }}
         animate={{ 
           x: '0%',
@@ -113,7 +113,7 @@ export function MainSplitHero() {
         
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 pointer-events-none">
           <motion.h2 
-            className="text-6xl md:text-8xl font-bold tracking-tighter mix-blend-overlay"
+            className="text-4xl md:text-8xl font-bold tracking-tighter mix-blend-overlay"
             layoutId="tattoo-title"
           >
             TATTOO
