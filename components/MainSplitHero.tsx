@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, useSpring, useMotionValue } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 
@@ -33,19 +33,30 @@ export function MainSplitHero() {
     window.location.href = `${window.location.protocol}//${sub}.${root}`
   }
 
+  // Simple mobile check (hydration safe)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   return (
     <div 
-      className="relative h-screen w-full flex flex-row overflow-hidden bg-black"
+      className="relative h-screen w-full flex flex-col md:flex-row overflow-hidden bg-black"
       onMouseMove={handleMouseMove}
       onMouseLeave={() => { x.set(0); y.set(0); setHoveredSide(null) }}
     >
       {/* LEFT PANEL - ART */}
       <motion.div
-        className="relative h-full w-1/2 overflow-hidden cursor-pointer group border-r border-neutral-800"
+        className="relative w-full md:w-auto h-1/2 md:h-full overflow-hidden cursor-pointer group border-b md:border-b-0 md:border-r border-neutral-800"
         initial={{ x: '-100%' }}
         animate={{ 
           x: '0%',
-          width: hoveredSide === 'left' ? '55%' : hoveredSide === 'right' ? '45%' : '50%'
+          width: isMobile ? '100%' : (hoveredSide === 'left' ? '55%' : hoveredSide === 'right' ? '45%' : '50%'),
+          height: isMobile ? '50%' : '100%'
         }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         onMouseEnter={() => setHoveredSide('left')}
@@ -63,7 +74,7 @@ export function MainSplitHero() {
         
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 pointer-events-none">
           <motion.h2 
-            className="text-4xl md:text-8xl font-bold tracking-tighter mix-blend-overlay"
+            className="text-6xl md:text-8xl font-bold tracking-tighter mix-blend-overlay"
             layoutId="art-title"
           >
             ART
@@ -80,22 +91,24 @@ export function MainSplitHero() {
 
       {/* CENTER SEAM */}
       <motion.div 
-        className="absolute top-0 bottom-0 left-1/2 w-px bg-white/50 z-20 shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+        className="hidden md:block absolute top-0 bottom-0 left-1/2 w-px bg-white/50 z-20 shadow-[0_0_15px_rgba(255,255,255,0.5)]"
         initial={{ height: 0 }}
         animate={{ 
           height: '100%',
-          left: hoveredSide === 'left' ? '55%' : hoveredSide === 'right' ? '45%' : '50%'
+          left: isMobile ? '50%' : (hoveredSide === 'left' ? '55%' : hoveredSide === 'right' ? '45%' : '50%')
         }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
       />
 
       {/* RIGHT PANEL - TATTOO */}
       <motion.div
-        className="relative h-full w-1/2 overflow-hidden cursor-pointer group"
-        initial={{ x: '100%' }}
+        className="relative w-full md:w-auto h-1/2 md:h-full overflow-hidden cursor-pointer group"
+        initial={{ x: isMobile ? '0%' : '100%', y: isMobile ? '100%' : '0%' }}
         animate={{ 
-          x: '0%',
-          width: hoveredSide === 'right' ? '55%' : hoveredSide === 'left' ? '45%' : '50%'
+          x: '0%', 
+          y: '0%',
+          width: isMobile ? '100%' : (hoveredSide === 'right' ? '55%' : hoveredSide === 'left' ? '45%' : '50%'),
+          height: isMobile ? '50%' : '100%'
         }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         onMouseEnter={() => setHoveredSide('right')}
@@ -113,7 +126,7 @@ export function MainSplitHero() {
         
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 pointer-events-none">
           <motion.h2 
-            className="text-4xl md:text-8xl font-bold tracking-tighter mix-blend-overlay"
+            className="text-6xl md:text-8xl font-bold tracking-tighter mix-blend-overlay"
             layoutId="tattoo-title"
           >
             TATTOO
