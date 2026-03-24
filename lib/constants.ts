@@ -2,7 +2,7 @@ export type SiteVariant = 'main' | 'art' | 'tattoo'
 
 export const SITE_CONFIG = {
   main: {
-    title: 'Artist Name',
+    title: 'NINA',
     description: 'Art & Tattoo Portfolio',
     nav: [
       { label: 'About', href: '/about' },
@@ -10,21 +10,30 @@ export const SITE_CONFIG = {
     ],
   },
   art: {
-    title: 'Artist Name - Art',
+    title: 'NINARÒ',
     description: 'Fine Art Portfolio',
     nav: [
       { label: 'Home', href: '/' },
-      { label: 'About', href: '/about' },
-      { label: 'Contact', href: '/contact' },
+      { label: 'Bio/Contact', href: '/bio-contact' },
+      { label: 'Shop', href: '/shop' },
+      { label: 'Paintings', href: '/paintings' },
+      { label: 'Walls', href: '/walls' },
+      { label: 'Installations', href: '/installations' },
+      { label: 'Illustration', href: '/illustration' },
+      { label: '3D Objects', href: '/3d-objects' },
+      { label: 'Workshops', href: '/workshops' },
     ],
   },
   tattoo: {
-    title: 'Artist Name - Tattoo',
+    title: 'LINEACRUDA',
     description: 'Tattoo Portfolio',
     nav: [
       { label: 'Home', href: '/' },
-      { label: 'About', href: '/about' },
-      { label: 'Contact', href: '/contact' },
+      { label: 'Bio', href: '/bio' },
+      { label: 'Interview/Featuring', href: '/interview-featuring' },
+      { label: 'Pics/Videos', href: '/pics-videos' },
+      { label: 'Shop', href: '/shop' },
+      { label: 'Booking/Waiting List', href: '/booking' },
     ],
   },
 }
