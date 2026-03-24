@@ -30,14 +30,8 @@ export function MainSplitHero() {
   }
 
   const navigateToSubdomain = (sub: string) => {
-    // In a real multi-domain setup, we'd redirect. 
-    // For this prototype/single-app, we might just be showing different content
-    // But observing the user's codebase, it seems they want sub-sites.
-    // We will stick to the existing logic.
-    const host = window.location.host
-    const root = host.replace(/^www\./, '')
-    // navigate to subdomain
-     window.location.href = `${window.location.protocol}//${sub}.${root}`
+    // Navigate using query parameters to avoid SSL issues with subdomains on Render
+    window.location.href = `/?v=${sub}`
   }
 
   const [isMobile, setIsMobile] = useState(false)

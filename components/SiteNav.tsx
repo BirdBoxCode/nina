@@ -29,7 +29,7 @@ export function SiteNav({ variant = 'main' }: { variant?: SiteVariant }) {
           isArt ? "font-[family-name:var(--font-cinzel)]" : 
           isTattoo ? "font-[family-name:var(--font-space-mono)]" : ""
         )}>
-          <Link href="/">
+          <Link href="/?v=main">
             {isMain ? 'NINA' : config.title}
           </Link>
         </div>
