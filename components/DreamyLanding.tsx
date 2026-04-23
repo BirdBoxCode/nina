@@ -254,13 +254,13 @@ export function DreamyLanding() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.5, duration: 2 }}
-            className="flex justify-center gap-8 mt-8 pointer-events-auto"
+            className="flex flex-wrap justify-center gap-x-6 gap-y-3 mt-8 pointer-events-auto"
           >
             {['Paintings', 'Bio', 'Tattoo', 'Shop', 'Contact'].map((label) => (
               <motion.span
                 key={label}
                 whileHover={{ scale: 1.1, color: '#fff' }}
-                className="text-[10px] uppercase tracking-[0.3em] text-white/40 transition-colors"
+                className="text-[16px] uppercase tracking-[0.3em] text-white/40 transition-colors"
               >
                 {label}
               </motion.span>
