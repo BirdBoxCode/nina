@@ -1,11 +1,70 @@
 'use client'
 
 import React, { useRef, useState, useEffect } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
-import { Points, PointMaterial, Float, PerspectiveCamera, useTexture } from '@react-three/drei'
+import { Canvas, useFrame, extend, ThreeElement } from '@react-three/fiber'
+import { Points, PointMaterial, Float, PerspectiveCamera, useTexture, shaderMaterial } from '@react-three/drei'
 import * as THREE from 'three'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+
+// --- Custom Shimmer Material ---
+const ShimmerMaterial = shaderMaterial(
+  {
+    uTime: 0,
+    uMouse: new THREE.Vector2(0, 0),
+    uMap: null,
+  },
+  // Vertex Shader
+  `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+  `,
+  // Fragment Shader
+  `
+  uniform sampler2D uMap;
+  uniform float uTime;
+  uniform vec2 uMouse;
+  varying vec2 vUv;
+
+  void main() {
+    vec4 tex = texture2D(uMap, vUv);
+    if (tex.a < 0.01) discard;
+
+    // Create a diagonal reflective shimmer band
+    // The band position is influenced by both time and mouse movement
+    float angle = vUv.x + vUv.y;
+    float spread = 0.3;
+    float speed = uTime * 0.5;
+    float mouseInfluence = (uMouse.x + uMouse.y) * 2.0;
+    
+    float shimmer = sin(angle * 4.0 - speed - mouseInfluence);
+    shimmer = smoothstep(0.7, 1.0, shimmer);
+    
+    // Soften the shimmer and apply it as a white highlight
+    vec3 highlight = vec3(1.0, 1.0, 1.0) * shimmer * 0.4;
+    
+    // Add a slight "glint" based on mouse position
+    float glint = 1.0 - distance(vUv, uMouse * 0.5 + 0.5);
+    glint = pow(max(0.0, glint), 8.0) * 0.3;
+    
+    vec3 finalColor = tex.rgb + highlight + vec3(glint);
+    
+    gl_FragColor = vec4(finalColor, tex.a);
+  }
+  `
+)
+
+extend({ ShimmerMaterial })
+
+// Add type safety for the custom material
+declare module '@react-three/fiber' {
+  interface ThreeElements {
+    shimmerMaterial: ThreeElement<typeof ShimmerMaterial>
+  }
+}
 
 // --- Particle System ---
 function ParticleEmitter({ count = 800 }) {
@@ -84,6 +143,7 @@ function ParticleEmitter({ count = 800 }) {
 function ButterflyLogo() {
   const texture = useTexture('/images/assets/butterfly_1_cut.png')
   const meshRef = useRef<THREE.Mesh>(null!)
+  const materialRef = useRef<THREE.ShaderMaterial>(null!)
 
   useFrame((state) => {
     const { x, y } = state.mouse
@@ -91,6 +151,12 @@ function ButterflyLogo() {
     meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, x * 0.4, 0.1)
     meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, -y * 0.4, 0.1)
     
+    // Update shader uniforms
+    if (materialRef.current) {
+      materialRef.current.uniforms.uTime.value = state.clock.getElapsedTime()
+      materialRef.current.uniforms.uMouse.value.lerp(new THREE.Vector2(x, y), 0.1)
+    }
+
     // Floating motion
     const t = state.clock.getElapsedTime()
     meshRef.current.position.y = Math.sin(t * 0.8) * 0.1
@@ -99,7 +165,13 @@ function ButterflyLogo() {
   return (
     <mesh ref={meshRef}>
       <planeGeometry args={[3, 3]} />
-      <meshBasicMaterial map={texture} transparent alphaTest={0.01} side={THREE.DoubleSide} />
+      <shimmerMaterial 
+        ref={materialRef} 
+        uMap={texture} 
+        transparent 
+        alphaTest={0.01} 
+        side={THREE.DoubleSide} 
+      />
     </mesh>
   )
 }
