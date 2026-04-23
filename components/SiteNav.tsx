@@ -39,7 +39,7 @@ export function SiteNav({ variant = 'main' }: { variant?: SiteVariant }) {
           {config.nav.map((item) => (
             <span
               key={item.href}
-              className="text-[10px] uppercase tracking-[0.3em]"
+              className="text-sm uppercase tracking-[0.3em]"
             >
               {item.label}
             </span>

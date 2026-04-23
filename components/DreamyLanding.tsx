@@ -260,7 +260,7 @@ export function DreamyLanding() {
               <motion.span
                 key={label}
                 whileHover={{ scale: 1.1, color: '#fff' }}
-                className="text-[10px] uppercase tracking-[0.3em] text-white/40 transition-colors"
+                className="text-[16px] uppercase tracking-[0.3em] text-white/40 transition-colors"
               >
                 {label}
               </motion.span>
