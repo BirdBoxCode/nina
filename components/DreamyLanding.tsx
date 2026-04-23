@@ -254,21 +254,14 @@ export function DreamyLanding() {
 
       {/* Navigation Overlay (Minimal) */}
       <div className="absolute bottom-12 left-0 right-0 z-30 flex justify-center gap-8 pointer-events-auto">
-        {[
-          { label: 'Paintings', href: '/paintings' },
-          { label: 'Bio', href: '/bio-contact' },
-          { label: 'Tattoo', href: '/?v=tattoo' },
-          { label: 'Shop', href: '/shop' },
-          { label: 'Contact', href: '/contact' }
-        ].map((item) => (
-          <motion.a
-            key={item.label}
-            href={item.href}
+        {['Paintings', 'Bio', 'Tattoo', 'Shop', 'Contact'].map((label) => (
+          <motion.span
+            key={label}
             whileHover={{ scale: 1.1, color: '#fff' }}
             className="text-[10px] uppercase tracking-[0.3em] text-white/40 transition-colors"
           >
-            {item.label}
-          </motion.a>
+            {label}
+          </motion.span>
         ))}
       </div>
       

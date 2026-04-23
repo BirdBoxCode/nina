@@ -37,13 +37,12 @@ export function SiteNav({ variant = 'main' }: { variant?: SiteVariant }) {
         {/* Desktop Nav */}
         <nav className="hidden lg:flex gap-8">
           {config.nav.map((item) => (
-            <Link
+            <span
               key={item.href}
-              href={item.href}
-              className="text-[10px] uppercase tracking-[0.3em] hover:opacity-50 transition-opacity"
+              className="text-[10px] uppercase tracking-[0.3em]"
             >
               {item.label}
-            </Link>
+            </span>
           ))}
         </nav>
 
@@ -70,17 +69,15 @@ export function SiteNav({ variant = 'main' }: { variant?: SiteVariant }) {
           >
             <nav className="flex flex-col gap-6">
               {config.nav.map((item) => (
-                <Link
+                <span
                   key={item.href}
-                  href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
                     "text-3xl font-bold tracking-tighter uppercase border-b border-current/10 pb-4",
                     isArt ? "font-[family-name:var(--font-cinzel)]" : "font-[family-name:var(--font-space-mono)]"
                   )}
                 >
                   {item.label}
-                </Link>
+                </span>
               ))}
             </nav>
             
