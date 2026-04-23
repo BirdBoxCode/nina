@@ -3,6 +3,11 @@
 @layer base {
   body {
     @apply bg-neutral-950 text-neutral-50 antialiased selection:bg-neutral-700 selection:text-white;
+    cursor: none;
+  }
+  
+  a, button, [role="button"], .cursor-pointer {
+    cursor: none !important;
   }
 }
 
