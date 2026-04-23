@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Cinzel, Space_Mono } from "next/font/google"; // Using Inter for clean typography, Cinzel for Art, Space Mono for Tattoo
 import "./globals.css";
 import { clsx } from "clsx";
+import { CustomCursor } from "@/components/CustomCursor";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -39,6 +40,7 @@ export default function RootLayout({
           "font-sans min-h-screen flex flex-col bg-neutral-950 text-neutral-50 antialiased selection:bg-neutral-700 selection:text-white"
         )}
       >
+        <CustomCursor />
         {children}
       </body>
     </html>

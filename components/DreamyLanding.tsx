@@ -64,7 +64,9 @@ extend({ ShimmerMaterial })
 // Add type safety for the custom material
 declare module '@react-three/fiber' {
   interface ThreeElements {
-    shimmerMaterial: ThreeElement<typeof ShimmerMaterial>
+    shimmerMaterial: ThreeElement<typeof ShimmerMaterial> & {
+      uMap?: THREE.Texture | null
+    }
   }
 }
 
@@ -169,7 +171,7 @@ function ButterflyLogo() {
       <planeGeometry args={[3, 3]} />
       <shimmerMaterial 
         ref={materialRef} 
-        uMap={texture} 
+        uMap={texture as any} 
         transparent 
         alphaTest={0.01} 
         side={THREE.DoubleSide} 
