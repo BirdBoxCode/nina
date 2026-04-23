@@ -196,7 +196,7 @@ export function DreamyLanding() {
       <div 
         className="absolute inset-0 z-0 bg-cover bg-center opacity-80"
         style={{ 
-          backgroundImage: "url('/images/backgrounds/Opera_senza_titolo.png')",
+          backgroundImage: "url('/images/assets/bg2.png')",
           backgroundSize: 'cover',
         }}
       />
