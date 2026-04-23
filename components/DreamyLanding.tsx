@@ -241,7 +241,7 @@ export function DreamyLanding() {
               priority
             />
           </motion.div>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 2 }}
@@ -249,20 +249,24 @@ export function DreamyLanding() {
           >
             Coming Soon
           </motion.p>
-        </div>
-      </div>
 
-      {/* Navigation Overlay (Minimal) */}
-      <div className="absolute bottom-24 left-0 right-0 z-30 flex justify-center gap-8 pointer-events-auto">
-        {['Paintings', 'Bio', 'Tattoo', 'Shop', 'Contact'].map((label) => (
-          <motion.span
-            key={label}
-            whileHover={{ scale: 1.1, color: '#fff' }}
-            className="text-[10px] uppercase tracking-[0.3em] text-white/40 transition-colors"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5, duration: 2 }}
+            className="flex justify-center gap-8 mt-8 pointer-events-auto"
           >
-            {label}
-          </motion.span>
-        ))}
+            {['Paintings', 'Bio', 'Tattoo', 'Shop', 'Contact'].map((label) => (
+              <motion.span
+                key={label}
+                whileHover={{ scale: 1.1, color: '#fff' }}
+                className="text-[10px] uppercase tracking-[0.3em] text-white/40 transition-colors"
+              >
+                {label}
+              </motion.span>
+            ))}
+          </motion.div>
+        </div>
       </div>
       
       {/* Decorative Overlays */}
