@@ -21,7 +21,7 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Artist Portfolio",
+  title: "NINARO",
   description: "Art & Tattoo Portfolio",
 };
 
