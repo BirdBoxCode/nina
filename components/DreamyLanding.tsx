@@ -247,7 +247,7 @@ export function DreamyLanding() {
             transition={{ delay: 1, duration: 2 }}
             className="text-xs md:text-sm tracking-[0.5em] font-light text-indigo-200 mt-4 uppercase bg-black/30 backdrop-blur-md border border-white/10 px-4 py-1.5 rounded-full"
           >
-            Fine Art & Ethereal Expressions
+            Coming Soon
           </motion.p>
         </div>
       </div>
