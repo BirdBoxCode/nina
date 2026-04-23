@@ -254,7 +254,7 @@ export function DreamyLanding() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.5, duration: 2 }}
-            className="flex flex-wrap justify-center gap-x-6 gap-y-3 mt-8 pointer-events-auto"
+            className="flex flex-wrap justify-center gap-x-6 gap-y-3 mt-8 md:mt-[72px] px-10 md:px-0 pointer-events-auto"
           >
             {['Paintings', 'Bio', 'Tattoo', 'Shop', 'Contact'].map((label) => (
               <motion.span
