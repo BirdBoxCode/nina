@@ -191,7 +191,7 @@ export function DreamyLanding() {
   }, [])
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-neutral-950">
+    <div className="relative h-screen max-h-screen w-screen overflow-hidden bg-neutral-950">
       {/* --- Background Layer --- */}
       <div 
         className="absolute inset-0 z-0 bg-cover bg-center opacity-80"
@@ -208,7 +208,7 @@ export function DreamyLanding() {
           <ambientLight intensity={0.5} />
           <pointLight position={[10, 10, 10]} intensity={1} />
           
-          <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+          <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5} position={[0, isMobile ? 1.2 : 0, 0]}>
             <ButterflyLogo />
           </Float>
           
@@ -218,7 +218,7 @@ export function DreamyLanding() {
 
       {/* --- Text Layer --- */}
       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none">
-        <div className="mt-[320px] md:mt-[400px] text-center flex flex-col items-center">
+        <div className="mt-0 md:mt-[400px] text-center flex flex-col items-center">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ 
@@ -253,7 +253,7 @@ export function DreamyLanding() {
       </div>
 
       {/* Navigation Overlay (Minimal) */}
-      <div className="absolute bottom-12 left-0 right-0 z-30 flex justify-center gap-8 pointer-events-auto">
+      <div className="absolute bottom-24 left-0 right-0 z-30 flex justify-center gap-8 pointer-events-auto">
         {['Paintings', 'Bio', 'Tattoo', 'Shop', 'Contact'].map((label) => (
           <motion.span
             key={label}
