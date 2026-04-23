@@ -1,0 +1,205 @@
+'use client'
+
+import React, { useRef, useState, useEffect } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { Points, PointMaterial, Float, PerspectiveCamera, useTexture } from '@react-three/drei'
+import * as THREE from 'three'
+import { motion } from 'framer-motion'
+import { cn } from '@/lib/utils'
+
+// --- Particle System ---
+function ParticleEmitter({ count = 800 }) {
+  const points = useRef<THREE.Points>(null!)
+  
+  // Create the arrays once and keep them stable.
+  // We use useState with a factory function to ensure they are only created once.
+  const [positions] = useState(() => new Float32Array(count * 3))
+  const [velocities] = useState(() => new Float32Array(count * 3))
+  const [initialized, setInitialized] = useState(false)
+
+  useEffect(() => {
+    // We ignore the immutability rule here because we are intentionally 
+    // initializing the TypedArray content once on mount.
+    /* eslint-disable react-hooks/immutability */
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 5
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 5
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 2
+      
+      velocities[i * 3] = (Math.random() - 0.5) * 0.01
+      velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.01
+      velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.01
+    }
+    /* eslint-enable react-hooks/immutability */
+    setInitialized(true)
+  }, [count, positions, velocities])
+
+  useFrame((state) => {
+    if (!initialized) return
+    const time = state.clock.getElapsedTime()
+    const { x, y } = state.mouse
+    
+    /* eslint-disable react-hooks/immutability */
+    for (let i = 0; i < count; i++) {
+      const idx = i * 3
+      // Drift outward
+      positions[idx] += velocities[idx] + Math.sin(time + i) * 0.001
+      positions[idx + 1] += velocities[idx + 1] + Math.cos(time + i) * 0.001
+      
+      // Reactive to mouse
+      const dx = positions[idx] - x * 5
+      const dy = positions[idx + 1] - y * 5
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist < 1) {
+        positions[idx] += dx * 0.01
+        positions[idx + 1] += dy * 0.01
+      }
+
+      // Reset if too far
+      if (Math.abs(positions[idx]) > 6 || Math.abs(positions[idx + 1]) > 6) {
+        positions[idx] = (Math.random() - 0.5) * 0.5
+        positions[idx + 1] = (Math.random() - 0.5) * 0.5
+      }
+    }
+    /* eslint-enable react-hooks/immutability */
+    points.current.geometry.attributes.position.needsUpdate = true
+  })
+
+  return (
+    <Points ref={points} positions={positions} stride={3} frustumCulled={false}>
+      <PointMaterial
+        transparent
+        color="#ffffff"
+        size={0.015}
+        sizeAttenuation={true}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        opacity={0.6}
+      />
+    </Points>
+  )
+}
+
+// --- Central Logo ---
+function ButterflyLogo() {
+  const texture = useTexture('/images/assets/butterfly_1_cut.png')
+  const meshRef = useRef<THREE.Mesh>(null!)
+
+  useFrame((state) => {
+    const { x, y } = state.mouse
+    // Subtle tilt
+    meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, x * 0.4, 0.1)
+    meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, -y * 0.4, 0.1)
+    
+    // Floating motion
+    const t = state.clock.getElapsedTime()
+    meshRef.current.position.y = Math.sin(t * 0.8) * 0.1
+  })
+
+  return (
+    <mesh ref={meshRef}>
+      <planeGeometry args={[3, 3]} />
+      <meshBasicMaterial map={texture} transparent alphaTest={0.01} side={THREE.DoubleSide} />
+    </mesh>
+  )
+}
+
+export function DreamyLanding() {
+  const [isMobile, setIsMobile] = useState(false)
+  
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  return (
+    <div className="relative h-screen w-screen overflow-hidden bg-neutral-950">
+      {/* --- Background Layer --- */}
+      <div 
+        className="absolute inset-0 z-0 bg-cover bg-center opacity-80"
+        style={{ 
+          backgroundImage: "url('/images/backgrounds/Opera_senza_titolo.png')",
+          backgroundSize: 'cover',
+        }}
+      />
+      
+      {/* --- 3D Layer --- */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
+        <Canvas gl={{ antialias: true, alpha: true }}>
+          <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={isMobile ? 75 : 50} />
+          <ambientLight intensity={0.5} />
+          <pointLight position={[10, 10, 10]} intensity={1} />
+          
+          <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+            <ButterflyLogo />
+          </Float>
+          
+          <ParticleEmitter count={isMobile ? 400 : 1000} />
+        </Canvas>
+      </div>
+
+      {/* --- Text Layer --- */}
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none">
+        <div className="mt-[320px] md:mt-[400px] text-center">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ 
+              opacity: [0.7, 1, 0.7],
+              y: 0,
+              scale: [0.98, 1, 0.98]
+            }}
+            transition={{ 
+              opacity: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+              scale: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+              y: { duration: 1.5, ease: "easeOut" }
+            }}
+            className={cn(
+              "text-6xl md:text-8xl lg:text-9xl font-bold tracking-[0.2em] text-white/90 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]",
+              "font-[family-name:var(--font-cinzel)]"
+            )}
+            style={{
+              background: 'linear-gradient(to bottom, #ffffff, #a5b4fc)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            NINARÒ
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.6 }}
+            transition={{ delay: 1, duration: 2 }}
+            className="text-xs md:text-sm tracking-[0.5em] font-light text-indigo-200 mt-4 uppercase"
+          >
+            Fine Art & Ethereal Expressions
+          </motion.p>
+        </div>
+      </div>
+
+      {/* Navigation Overlay (Minimal) */}
+      <div className="absolute bottom-12 left-0 right-0 z-30 flex justify-center gap-8 pointer-events-auto">
+        {[
+          { label: 'Paintings', href: '/paintings' },
+          { label: 'Bio', href: '/bio-contact' },
+          { label: 'Tattoo', href: '/?v=tattoo' },
+          { label: 'Shop', href: '/shop' },
+          { label: 'Contact', href: '/contact' }
+        ].map((item) => (
+          <motion.a
+            key={item.label}
+            href={item.href}
+            whileHover={{ scale: 1.1, color: '#fff' }}
+            className="text-[10px] uppercase tracking-[0.3em] text-white/40 transition-colors"
+          >
+            {item.label}
+          </motion.a>
+        ))}
+      </div>
+      
+      {/* Decorative Overlays */}
+      <div className="absolute inset-0 z-0 bg-radial-gradient from-transparent via-transparent to-black/40 pointer-events-none" />
+    </div>
+  )
+}
