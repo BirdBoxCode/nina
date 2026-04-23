@@ -7,6 +7,8 @@ import * as THREE from 'three'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
+import Image from 'next/image'
+
 // --- Custom Shimmer Material ---
 const ShimmerMaterial = shaderMaterial(
   {
@@ -214,8 +216,8 @@ export function DreamyLanding() {
 
       {/* --- Text Layer --- */}
       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none">
-        <div className="mt-[320px] md:mt-[400px] text-center">
-          <motion.h1 
+        <div className="mt-[320px] md:mt-[400px] text-center flex flex-col items-center">
+          <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ 
               opacity: [0.7, 1, 0.7],
@@ -227,18 +229,16 @@ export function DreamyLanding() {
               scale: { duration: 4, repeat: Infinity, ease: "easeInOut" },
               y: { duration: 1.5, ease: "easeOut" }
             }}
-            className={cn(
-              "text-6xl md:text-8xl lg:text-9xl font-bold tracking-[0.2em] text-white/90 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]",
-              "font-[family-name:var(--font-cinzel)]"
-            )}
-            style={{
-              background: 'linear-gradient(to bottom, #ffffff, #a5b4fc)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
+            className="relative w-[300px] h-[100px] md:w-[500px] md:h-[160px] lg:w-[650px] lg:h-[200px]"
           >
-            NINARÒ
-          </motion.h1>
+            <Image
+              src="/images/assets/ninaro.png"
+              alt="NINARÒ"
+              fill
+              className="object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+              priority
+            />
+          </motion.div>
           <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.6 }}
