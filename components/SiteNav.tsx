@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X } from 'lucide-react'
@@ -10,6 +10,11 @@ import { SITE_CONFIG, SiteVariant } from '@/lib/constants'
 export function SiteNav({ variant = 'main' }: { variant?: SiteVariant }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const config = SITE_CONFIG[variant]
+
+  useEffect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [isMobileMenuOpen])
   const isMain = variant === 'main'
   const isArt = variant === 'art'
   const isTattoo = variant === 'tattoo'
@@ -67,12 +72,12 @@ export function SiteNav({ variant = 'main' }: { variant?: SiteVariant }) {
               isArt ? "bg-white text-black" : "bg-neutral-900 text-white"
             )}
           >
-            <nav className="flex flex-col gap-6">
+            <nav className="flex flex-col gap-3 overflow-y-auto">
               {config.nav.map((item) => (
                 <span
                   key={item.href}
                   className={cn(
-                    "text-3xl font-bold tracking-tighter uppercase border-b border-current/10 pb-4",
+                    "text-xl font-bold tracking-tighter uppercase border-b border-current/10 pb-3",
                     isArt ? "font-[family-name:var(--font-cinzel)]" : "font-[family-name:var(--font-space-mono)]"
                   )}
                 >
