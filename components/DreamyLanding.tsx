@@ -201,6 +201,29 @@ export function DreamyLanding() {
         }}
       />
       
+      {/* --- Wings Background --- */}
+      <motion.div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-5 pointer-events-none"
+        style={{ width: 'calc(100vw - 80px)', height: '100vh' }}
+        animate={{
+          scale: [0.98, 1.02, 0.98],
+          opacity: [0.38, 0.48, 0.38],
+        }}
+        transition={{
+          duration: 6,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      >
+        <Image
+          src="/images/assets/bg-wings.png"
+          alt=""
+          fill
+          className="object-contain object-center"
+          priority
+        />
+      </motion.div>
+
       {/* --- 3D Layer --- */}
       <div className="absolute inset-0 z-10 pointer-events-none">
         <Canvas gl={{ antialias: true, alpha: true }}>
