@@ -6,6 +6,7 @@ import { Float, PerspectiveCamera, useTexture, shaderMaterial } from '@react-thr
 import * as THREE from 'three'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import { PaperCrinkle } from '@/components/PaperCrinkle'
 
 // --- Custom Shimmer Material ---
 const ShimmerMaterial = shaderMaterial(
@@ -111,7 +112,8 @@ function ButterflyLogo() {
 
 export function DreamyLanding() {
   return (
-    <div className="w-full min-h-screen flex items-center justify-center bg-[#FBFFFF]">
+    <div className="relative w-full min-h-screen flex items-center justify-center bg-[#FBFFFF]">
+      <PaperCrinkle />
       {/* section-hero */}
       <div className="flex flex-col items-center gap-[10px] w-[1100px] h-[987px] flex-shrink-0">
         {/* HERO-WRAPPER */}
