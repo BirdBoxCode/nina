@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react'
 import { Canvas, useFrame, extend, ThreeElement } from '@react-three/fiber'
-import { Points, PointMaterial, Float, PerspectiveCamera, useTexture, shaderMaterial } from '@react-three/drei'
+import { Float, PerspectiveCamera, useTexture, shaderMaterial } from '@react-three/drei'
 import * as THREE from 'three'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -68,79 +68,6 @@ declare module '@react-three/fiber' {
       uMap?: THREE.Texture | null
     }
   }
-}
-
-// --- Particle System ---
-function ParticleEmitter({ count = 800 }) {
-  const points = useRef<THREE.Points>(null!)
-  
-  // Create the arrays once and keep them stable.
-  // We use useState with a factory function to ensure they are only created once.
-  const [positions] = useState(() => new Float32Array(count * 3))
-  const [velocities] = useState(() => new Float32Array(count * 3))
-  const [initialized, setInitialized] = useState(false)
-
-  useEffect(() => {
-    // We ignore the immutability rule here because we are intentionally 
-    // initializing the TypedArray content once on mount.
-    /* eslint-disable react-hooks/immutability */
-    for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 5
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 5
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 2
-      
-      velocities[i * 3] = (Math.random() - 0.5) * 0.01
-      velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.01
-      velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.01
-    }
-    /* eslint-enable react-hooks/immutability */
-    setInitialized(true)
-  }, [count, positions, velocities])
-
-  useFrame((state) => {
-    if (!initialized) return
-    const time = state.clock.getElapsedTime()
-    const { x, y } = state.mouse
-    
-    /* eslint-disable react-hooks/immutability */
-    for (let i = 0; i < count; i++) {
-      const idx = i * 3
-      // Drift outward
-      positions[idx] += velocities[idx] + Math.sin(time + i) * 0.001
-      positions[idx + 1] += velocities[idx + 1] + Math.cos(time + i) * 0.001
-      
-      // Reactive to mouse
-      const dx = positions[idx] - x * 5
-      const dy = positions[idx + 1] - y * 5
-      const dist = Math.sqrt(dx * dx + dy * dy)
-      if (dist < 1) {
-        positions[idx] += dx * 0.01
-        positions[idx + 1] += dy * 0.01
-      }
-
-      // Reset if too far
-      if (Math.abs(positions[idx]) > 6 || Math.abs(positions[idx + 1]) > 6) {
-        positions[idx] = (Math.random() - 0.5) * 0.5
-        positions[idx + 1] = (Math.random() - 0.5) * 0.5
-      }
-    }
-    /* eslint-enable react-hooks/immutability */
-    points.current.geometry.attributes.position.needsUpdate = true
-  })
-
-  return (
-    <Points ref={points} positions={positions} stride={3} frustumCulled={false}>
-      <PointMaterial
-        transparent
-        color="#ffffff"
-        size={0.015}
-        sizeAttenuation={true}
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-        opacity={0.6}
-      />
-    </Points>
-  )
 }
 
 // --- Central Logo ---
@@ -235,7 +162,6 @@ export function DreamyLanding() {
             <ButterflyLogo />
           </Float>
           
-          <ParticleEmitter count={isMobile ? 400 : 1000} />
         </Canvas>
       </div>
 
