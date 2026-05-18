@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useRef } from 'react'
+import React, { useRef, useEffect } from 'react'
 import { Canvas, useFrame, extend, ThreeElement } from '@react-three/fiber'
 import { Float, PerspectiveCamera, useTexture, shaderMaterial } from '@react-three/drei'
 import * as THREE from 'three'
@@ -38,10 +38,10 @@ const ShimmerMaterial = shaderMaterial(
     float shimmer = sin(angle * 4.0 - speed - mouseInfluence);
     shimmer = smoothstep(0.7, 1.0, shimmer);
 
-    vec3 highlight = vec3(1.0, 1.0, 1.0) * shimmer * 0.4;
+    vec3 highlight = vec3(1.0, 1.0, 1.0) * shimmer * 0.25;
 
     float glint = 1.0 - distance(vUv, uMouse * 0.5 + 0.5);
-    glint = pow(max(0.0, glint), 8.0) * 0.3;
+    glint = pow(max(0.0, glint), 8.0) * 0.18;
 
     vec3 finalColor = tex.rgb + highlight + vec3(glint);
 
@@ -64,9 +64,22 @@ function ButterflyLogo() {
   const texture = useTexture('/images/assets/Opera_senza_titolo-4 2.png')
   const meshRef = useRef<THREE.Mesh>(null!)
   const materialRef = useRef<THREE.ShaderMaterial>(null!)
+  const windowMouse = useRef(new THREE.Vector2(0, 0))
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      windowMouse.current.set(
+        (e.clientX / window.innerWidth) * 2 - 1,
+        -((e.clientY / window.innerHeight) * 2 - 1)
+      )
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => window.removeEventListener('mousemove', handleMouseMove)
+  }, [])
 
   useFrame((state) => {
-    const { x, y } = state.mouse
+    const x = windowMouse.current.x
+    const y = windowMouse.current.y
     meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, x * 0.25, 0.1)
     meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, -y * 0.25, 0.1)
 
