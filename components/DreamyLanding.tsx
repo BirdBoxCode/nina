@@ -67,8 +67,8 @@ function ButterflyLogo() {
 
   useFrame((state) => {
     const { x, y } = state.mouse
-    meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, x * 0.4, 0.1)
-    meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, -y * 0.4, 0.1)
+    meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, x * 0.25, 0.1)
+    meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, -y * 0.25, 0.1)
 
     if (materialRef.current) {
       materialRef.current.uniforms.uTime.value = state.clock.getElapsedTime()
@@ -76,7 +76,7 @@ function ButterflyLogo() {
     }
 
     const t = state.clock.getElapsedTime()
-    meshRef.current.position.y = Math.sin(t * 0.8) * 0.1
+    meshRef.current.position.y = Math.sin(t * 0.8) * 0.06
   })
 
   const LOGO_HEIGHT = 4
@@ -119,7 +119,7 @@ export function DreamyLanding() {
                 <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={50} />
                 <ambientLight intensity={0.5} />
                 <pointLight position={[10, 10, 10]} intensity={1} />
-                <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+                <Float speed={1.5} rotationIntensity={0.3} floatIntensity={0.3}>
                   <ButterflyLogo />
                 </Float>
               </Canvas>
@@ -138,7 +138,7 @@ export function DreamyLanding() {
                 scale: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
                 y: { duration: 1.5, ease: 'easeOut' },
               }}
-              className="relative w-[400px] h-[135px]"
+              className="relative w-[400px] h-[135px] -mt-[40px]"
             >
               <Image
                 src="/images/assets/Opera_senza_titolo-5 2.png"
