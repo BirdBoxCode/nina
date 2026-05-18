@@ -186,6 +186,26 @@ export function DreamyLanding() {
 
   return (
     <div className="relative w-full min-h-screen flex items-center justify-center bg-[#FBFFFF]">
+      {/* ambient breathing shadow — slow warm vignette that pulses */}
+      <div
+        className="absolute inset-0 pointer-events-none z-0"
+        style={{
+          background:
+            'radial-gradient(ellipse 85% 75% at 50% 50%, rgba(255,252,248,0) 0%, rgba(148,136,124,0.07) 55%, rgba(110,98,86,0.2) 100%)',
+          animation: 'breath-shadow 8s ease-in-out infinite',
+        }}
+      />
+      {/* grain texture overlay — SVG feTurbulence for organic paper surface */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none z-0"
+        aria-hidden="true"
+      >
+        <filter id="grain-filter">
+          <feTurbulence type="fractalNoise" baseFrequency="0.68" numOctaves="4" stitchTiles="stitch" />
+          <feColorMatrix type="saturate" values="0" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#grain-filter)" opacity="0.042" />
+      </svg>
       <PaperCrinkle />
       {/* section-hero */}
       <div className="flex flex-col items-center gap-[10px] max-w-[1100px] w-full">
