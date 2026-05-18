@@ -198,7 +198,7 @@ export function DreamyLanding() {
       {/* surface texture image — very subtle multiply overlay */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden" style={{ opacity: 0.08, mixBlendMode: 'multiply' }}>
         <Image
-          src="/images/assets/backgrounds/texture-overlay3.jpg"
+          src="/images/assets/backgrounds/texture-overlay3.webp"
           alt=""
           fill
           className="object-cover"
