@@ -2,7 +2,6 @@ import { headers } from 'next/headers'
 import { MainSplitHero } from '@/components/MainSplitHero'
 import { DreamyLanding } from '@/components/DreamyLanding'
 import { SubHome } from '@/components/SubHome'
-import { SiteNav } from '@/components/SiteNav'
 import { SiteVariant } from '@/lib/constants'
 
 export default async function HomePage() {
@@ -14,10 +13,5 @@ export default async function HomePage() {
     return <DreamyLanding />
   }
 
-  return (
-    <>
-      <SiteNav variant={variant} />
-      <SubHome variant={variant as 'tattoo'} />
-    </>
-  )
+  return <SubHome variant={variant as 'tattoo'} />
 }

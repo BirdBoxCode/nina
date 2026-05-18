@@ -183,7 +183,7 @@ export function DreamyLanding() {
             className="relative w-[300px] h-[100px] md:w-[500px] md:h-[160px] lg:w-[650px] lg:h-[200px]"
           >
             <Image
-              src="/images/assets/ninaro.png"
+              src="/images/assets/main-heading.png"
               alt="NINARÒ"
               fill
               className="object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
