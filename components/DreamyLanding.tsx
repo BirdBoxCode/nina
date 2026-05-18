@@ -134,12 +134,12 @@ export function DreamyLanding() {
     <div className="relative w-full min-h-screen flex items-center justify-center bg-[#FBFFFF]">
       <PaperCrinkle />
       {/* section-hero */}
-      <div className="flex flex-col items-center gap-[10px] w-[1100px] h-[987px] flex-shrink-0">
+      <div className="flex flex-col items-center gap-[10px] max-w-[1100px] w-full">
         {/* HERO-WRAPPER */}
-        <div className="relative flex h-[987px] px-[30px] py-[10px] justify-center items-center flex-shrink-0 self-stretch">
+        <div className="relative flex flex-col items-center justify-center min-h-[987px] px-[30px] py-[10px] self-stretch">
 
           {/* icon-wrapper */}
-          <div className="absolute left-[30px] top-[99px] flex flex-col items-start py-[1px] gap-[10px] z-50">
+          <div className="flex flex-row gap-4 z-50 md:absolute md:flex-col md:left-[30px] md:top-[99px] md:items-start md:py-[1px] md:gap-[10px]">
             {[1, 2, 3].map((n) => (
               <button
                 key={n}
@@ -147,7 +147,7 @@ export function DreamyLanding() {
                 className="cursor-pointer focus:outline-none"
                 aria-label="Toggle navigation"
               >
-                <Image src={`/images/assets/icons/icon ${n}.png`} alt="" width={64} height={64} />
+                <Image src={`/images/assets/icons/icon ${n}.png`} alt="" width={64} height={64} className="w-8 h-8 sm:w-12 sm:h-12 md:w-16 md:h-16" />
               </button>
             ))}
           </div>
