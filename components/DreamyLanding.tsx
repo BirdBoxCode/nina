@@ -36,9 +36,9 @@ const ShimmerMaterial = shaderMaterial(
     float mouseInfluence = (uMouse.x + uMouse.y) * 2.0;
 
     float shimmer = sin(angle * 4.0 - speed - mouseInfluence);
-    shimmer = smoothstep(0.7, 1.0, shimmer);
+    shimmer = smoothstep(0.88, 1.0, shimmer);
 
-    vec3 highlight = vec3(1.0, 1.0, 1.0) * shimmer * 0.25;
+    vec3 highlight = vec3(1.0, 1.0, 1.0) * shimmer * 0.12;
 
     float glint = 1.0 - distance(vUv, uMouse * 0.5 + 0.5);
     glint = pow(max(0.0, glint), 8.0) * 0.18;
