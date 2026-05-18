@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Cinzel, Space_Mono } from "next/font/google"; // Using Inter for clean typography, Cinzel for Art, Space Mono for Tattoo
+import { Inter, Cinzel, Space_Mono, Dancing_Script } from "next/font/google";
 import "./globals.css";
 import { clsx } from "clsx";
 import { CustomCursor } from "@/components/CustomCursor";
@@ -20,6 +20,11 @@ const spaceMono = Space_Mono({
   subsets: ["latin"],
 });
 
+const dancingScript = Dancing_Script({
+  variable: "--font-dancing-script",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "NINARO",
   description: "Art & Tattoo Portfolio",
@@ -37,6 +42,7 @@ export default function RootLayout({
           inter.variable,
           cinzel.variable,
           spaceMono.variable,
+          dancingScript.variable,
           "font-sans min-h-screen flex flex-col bg-neutral-950 text-neutral-50 antialiased selection:bg-neutral-700 selection:text-white"
         )}
       >

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+:root {
+  --Blue-Background: #FBFFFF;
+}
+
 @layer base {
   body {
     @apply bg-neutral-950 text-neutral-50 antialiased selection:bg-neutral-700 selection:text-white;
@@ -9,6 +13,11 @@
   a, button, [role="button"], .cursor-pointer {
     cursor: none !important;
   }
+}
+
+@keyframes breath-shadow {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 1;   }
 }
 
 /* Custom scrollbar for webkit */
