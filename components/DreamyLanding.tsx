@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState } from 'react'
 import { Canvas, useFrame, extend, ThreeElement } from '@react-three/fiber'
 import { Float, PerspectiveCamera, useTexture, shaderMaterial } from '@react-three/drei'
 import * as THREE from 'three'
-import { motion } from 'framer-motion'
+import { motion, useMotionValue, useSpring, animate, type MotionValue } from 'framer-motion'
 import Image from 'next/image'
 import { PaperCrinkle } from '@/components/PaperCrinkle'
 
@@ -126,9 +126,63 @@ const NAV_ITEMS = [
 const TORN_CLIP =
   'polygon(6% 0%, 2% 3%, 7% 7%, 1% 11%, 5% 15%, 0% 19%, 4% 23%, 7% 27%, 1% 31%, 5% 35%, 2% 39%, 6% 43%, 0% 47%, 4% 51%, 7% 55%, 1% 59%, 5% 63%, 2% 67%, 6% 71%, 0% 75%, 4% 79%, 7% 83%, 1% 87%, 5% 91%, 2% 95%, 6% 100%, 100% 100%, 100% 0%)'
 
+function IconButton({
+  n,
+  scale,
+  onToggleNav,
+}: {
+  n: number
+  scale: MotionValue<number>
+  onToggleNav: () => void
+}) {
+  const rotation = useMotionValue(0)
+
+  const handleHoverStart = () => {
+    animate(rotation, rotation.get() + 720, {
+      duration: 0.7,
+      ease: [0.22, 1, 0.36, 1],
+    })
+  }
+
+  return (
+    <motion.button
+      onClick={onToggleNav}
+      onHoverStart={handleHoverStart}
+      style={{ scale, rotate: rotation }}
+      className="cursor-pointer focus:outline-none"
+      aria-label="Toggle navigation"
+    >
+      <Image
+        src={`/images/assets/icons/icon ${n}.png`}
+        alt=""
+        width={64}
+        height={64}
+        className="w-8 h-8 sm:w-12 sm:h-12 md:w-16 md:h-16"
+      />
+    </motion.button>
+  )
+}
+
 export function DreamyLanding() {
   const [navOpen, setNavOpen] = useState(false)
   const [edgeHovered, setEdgeHovered] = useState(false)
+  const iconWrapperRef = useRef<HTMLDivElement>(null)
+  const proximityScale = useMotionValue(1)
+  const springScale = useSpring(proximityScale, { stiffness: 200, damping: 25 })
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!iconWrapperRef.current) return
+      const rect = iconWrapperRef.current.getBoundingClientRect()
+      const dx = Math.max(rect.left - e.clientX, 0, e.clientX - rect.right)
+      const dy = Math.max(rect.top - e.clientY, 0, e.clientY - rect.bottom)
+      const distance = Math.sqrt(dx * dx + dy * dy)
+      const t = Math.max(0, 1 - distance / 150)
+      proximityScale.set(1 + 0.2 * t)
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => window.removeEventListener('mousemove', handleMouseMove)
+  }, [proximityScale])
 
   return (
     <div className="relative w-full min-h-screen flex items-center justify-center bg-[#FBFFFF]">
@@ -139,16 +193,14 @@ export function DreamyLanding() {
         <div className="relative flex flex-col items-center justify-center min-h-[987px] px-[30px] py-[10px] self-stretch">
 
           {/* icon-wrapper */}
-          <div className="flex flex-row gap-4 z-50 md:absolute md:flex-col md:left-[30px] md:top-[99px] md:items-start md:py-[1px] md:gap-[10px]">
+          <div ref={iconWrapperRef} className="flex flex-row gap-4 z-50 md:absolute md:flex-col md:left-[30px] md:top-[99px] md:items-start md:py-[1px] md:gap-[10px]">
             {[1, 2, 3].map((n) => (
-              <button
+              <IconButton
                 key={n}
-                onClick={() => setNavOpen((v) => !v)}
-                className="cursor-pointer focus:outline-none"
-                aria-label="Toggle navigation"
-              >
-                <Image src={`/images/assets/icons/icon ${n}.png`} alt="" width={64} height={64} className="w-8 h-8 sm:w-12 sm:h-12 md:w-16 md:h-16" />
-              </button>
+                n={n}
+                scale={springScale}
+                onToggleNav={() => setNavOpen((v) => !v)}
+              />
             ))}
           </div>
 
