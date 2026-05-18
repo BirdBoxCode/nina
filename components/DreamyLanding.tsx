@@ -210,12 +210,18 @@ export function DreamyLanding() {
             onClick={() => { if (!navOpen) { setNavOpen(true); setEdgeHovered(false) } }}
             style={{
               right: '-4px',
-              backgroundImage: "url('/images/assets/paper-bg.png')",
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              clipPath: TORN_CLIP,
+              filter: 'drop-shadow(-5px 0px 6px rgba(0,0,0,0.35))',
             }}
           >
+            <div
+              className="w-full h-full"
+              style={{
+                backgroundImage: "url('/images/assets/paper-bg.png')",
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                clipPath: TORN_CLIP,
+              }}
+            >
             <nav className="flex flex-col items-end justify-center h-full pr-6 gap-[10px]">
               {NAV_ITEMS.map((item) => (
                 <a
@@ -227,6 +233,7 @@ export function DreamyLanding() {
                 </a>
               ))}
             </nav>
+            </div>
           </motion.div>
 
         </div>
