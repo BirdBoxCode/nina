@@ -115,3 +115,15 @@ Tech stack: Next.js (App Router) + Tailwind CSS\
 - Do NOT include speculative changes or optional enhancements unless asked.\
   \
   ***
+
+## Asset Handling
+
+- Never guess or hardcode image paths.
+- Always confirm the exact filename and path with the user before referencing any asset.
+
+---
+
+## Animations & Motion
+
+- Do NOT modify, remove, or recreate any existing animation or transition unless explicitly requested.
+- Treat all animations as preserved behavior by default.

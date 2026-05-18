@@ -1,12 +1,10 @@
 'use client'
 
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useRef } from 'react'
 import { Canvas, useFrame, extend, ThreeElement } from '@react-three/fiber'
 import { Float, PerspectiveCamera, useTexture, shaderMaterial } from '@react-three/drei'
 import * as THREE from 'three'
 import { motion } from 'framer-motion'
-import { cn } from '@/lib/utils'
-
 import Image from 'next/image'
 
 // --- Custom Shimmer Material ---
@@ -16,7 +14,6 @@ const ShimmerMaterial = shaderMaterial(
     uMouse: new THREE.Vector2(0, 0),
     uMap: null,
   },
-  // Vertex Shader
   `
   varying vec2 vUv;
   void main() {
@@ -24,7 +21,6 @@ const ShimmerMaterial = shaderMaterial(
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
   `,
-  // Fragment Shader
   `
   uniform sampler2D uMap;
   uniform float uTime;
@@ -35,25 +31,20 @@ const ShimmerMaterial = shaderMaterial(
     vec4 tex = texture2D(uMap, vUv);
     if (tex.a < 0.01) discard;
 
-    // Create a diagonal reflective shimmer band
-    // The band position is influenced by both time and mouse movement
     float angle = vUv.x + vUv.y;
-    float spread = 0.3;
     float speed = uTime * 0.5;
     float mouseInfluence = (uMouse.x + uMouse.y) * 2.0;
-    
+
     float shimmer = sin(angle * 4.0 - speed - mouseInfluence);
     shimmer = smoothstep(0.7, 1.0, shimmer);
-    
-    // Soften the shimmer and apply it as a white highlight
+
     vec3 highlight = vec3(1.0, 1.0, 1.0) * shimmer * 0.4;
-    
-    // Add a slight "glint" based on mouse position
+
     float glint = 1.0 - distance(vUv, uMouse * 0.5 + 0.5);
     glint = pow(max(0.0, glint), 8.0) * 0.3;
-    
+
     vec3 finalColor = tex.rgb + highlight + vec3(glint);
-    
+
     gl_FragColor = vec4(finalColor, tex.a);
   }
   `
@@ -61,7 +52,6 @@ const ShimmerMaterial = shaderMaterial(
 
 extend({ ShimmerMaterial })
 
-// Add type safety for the custom material
 declare module '@react-three/fiber' {
   interface ThreeElements {
     shimmerMaterial: ThreeElement<typeof ShimmerMaterial> & {
@@ -70,156 +60,98 @@ declare module '@react-three/fiber' {
   }
 }
 
-// --- Central Logo ---
 function ButterflyLogo() {
-  const texture = useTexture('/images/assets/butterfly_1_cut.png')
+  const texture = useTexture('/images/assets/Opera_senza_titolo-4 2.png')
   const meshRef = useRef<THREE.Mesh>(null!)
   const materialRef = useRef<THREE.ShaderMaterial>(null!)
 
   useFrame((state) => {
     const { x, y } = state.mouse
-    // Subtle tilt
     meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, x * 0.4, 0.1)
     meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, -y * 0.4, 0.1)
-    
-    // Update shader uniforms
+
     if (materialRef.current) {
       materialRef.current.uniforms.uTime.value = state.clock.getElapsedTime()
       materialRef.current.uniforms.uMouse.value.lerp(new THREE.Vector2(x, y), 0.1)
     }
 
-    // Floating motion
     const t = state.clock.getElapsedTime()
     meshRef.current.position.y = Math.sin(t * 0.8) * 0.1
   })
 
+  const LOGO_HEIGHT = 4
+  const LOGO_WIDTH = LOGO_HEIGHT * (487 / 543)
+
   return (
     <mesh ref={meshRef}>
-      <planeGeometry args={[3, 3]} />
-      <shimmerMaterial 
-        ref={materialRef} 
-        uMap={texture as any} 
-        transparent 
-        alphaTest={0.01} 
-        side={THREE.DoubleSide} 
+      <planeGeometry args={[LOGO_WIDTH, LOGO_HEIGHT]} />
+      <shimmerMaterial
+        ref={materialRef}
+        uMap={texture as any}
+        transparent
+        alphaTest={0.01}
+        side={THREE.DoubleSide}
       />
     </mesh>
   )
 }
 
 export function DreamyLanding() {
-  const [isMobile, setIsMobile] = useState(false)
-  
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
   return (
-    <div className="relative h-screen max-h-screen w-screen overflow-hidden bg-neutral-950">
-      {/* --- Background Layer --- */}
-      <div 
-        className="absolute inset-0 z-0 bg-cover bg-center opacity-80"
-        style={{ 
-          backgroundImage: "url('/images/assets/bg2.png')",
-          backgroundSize: 'cover',
-        }}
-      />
-      
-      {/* --- Wings Background --- */}
-      <motion.div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-5 pointer-events-none"
-        style={{ width: 'calc(100vw - 80px)', height: '100vh' }}
-        animate={{
-          scale: [0.98, 1.02, 0.98],
-          opacity: [0.38, 0.48, 0.38],
-        }}
-        transition={{
-          duration: 6,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      >
-        <Image
-          src="/images/assets/bg-wings.png"
-          alt=""
-          fill
-          className="object-contain object-center"
-          priority
-        />
-      </motion.div>
+    <div className="w-full min-h-screen flex items-center justify-center bg-[#FBFFFF]">
+      {/* section-hero */}
+      <div className="flex flex-col items-center gap-[10px] w-[1100px] h-[987px] flex-shrink-0">
+        {/* HERO-WRAPPER */}
+        <div className="relative flex h-[987px] px-[30px] py-[10px] justify-center items-center flex-shrink-0 self-stretch">
 
-      {/* --- 3D Layer --- */}
-      <div className="absolute inset-0 z-10 pointer-events-none">
-        <Canvas gl={{ antialias: true, alpha: true }}>
-          <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={isMobile ? 75 : 50} />
-          <ambientLight intensity={0.5} />
-          <pointLight position={[10, 10, 10]} intensity={1} />
-          
-          <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5} position={[0, isMobile ? 1.2 : 0, 0]}>
-            <ButterflyLogo />
-          </Float>
-          
-        </Canvas>
-      </div>
+          {/* icon-wrapper */}
+          <div className="absolute left-[30px] top-[99px] flex flex-col items-start py-[1px] gap-[10px]">
+            <Image src="/images/assets/icons/icon 1.png" alt="" width={70} height={70} />
+            <Image src="/images/assets/icons/icon 2.png" alt="" width={70} height={70} />
+            <Image src="/images/assets/icons/icon 3.png" alt="" width={70} height={70} />
+          </div>
 
-      {/* --- Text Layer --- */}
-      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none">
-        <div className="mt-0 md:mt-[400px] text-center flex flex-col items-center">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ 
-              opacity: [0.7, 1, 0.7],
-              y: 0,
-              scale: [0.98, 1, 0.98]
-            }}
-            transition={{ 
-              opacity: { duration: 4, repeat: Infinity, ease: "easeInOut" },
-              scale: { duration: 4, repeat: Infinity, ease: "easeInOut" },
-              y: { duration: 1.5, ease: "easeOut" }
-            }}
-            className="relative w-[300px] h-[100px] md:w-[500px] md:h-[160px] lg:w-[650px] lg:h-[200px]"
-          >
-            <Image
-              src="/images/assets/main-heading.png"
-              alt="NINARÒ"
-              fill
-              className="object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-              priority
-            />
-          </motion.div>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1, duration: 2 }}
-            className="text-xs md:text-sm tracking-[0.5em] font-light text-indigo-200 mt-4 uppercase bg-black/30 backdrop-blur-md border border-white/10 px-4 py-1.5 rounded-full"
-          >
-            Coming Soon
-          </motion.p>
+          {/* logo-wrapper */}
+          <div className="flex flex-col justify-center items-center">
+            {/* Main Logo — shimmer + float animation preserved */}
+            <div className="w-[487px] h-[543px]">
+              <Canvas gl={{ antialias: true, alpha: true }}>
+                <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={50} />
+                <ambientLight intensity={0.5} />
+                <pointLight position={[10, 10, 10]} intensity={1} />
+                <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+                  <ButterflyLogo />
+                </Float>
+              </Canvas>
+            </div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.5, duration: 2 }}
-            className="flex flex-wrap justify-center gap-x-6 gap-y-3 mt-8 md:mt-[72px] px-10 md:px-0 pointer-events-auto"
-          >
-            {['Paintings', 'Bio', 'Tattoo', 'Shop', 'Contact'].map((label) => (
-              <motion.span
-                key={label}
-                whileHover={{ scale: 1.1, color: '#fff' }}
-                className="text-[16px] uppercase tracking-[0.3em] text-white/40 transition-colors"
-              >
-                {label}
-              </motion.span>
-            ))}
-          </motion.div>
+            {/* NINARO Logo — opacity/scale pulse animation preserved */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{
+                opacity: [0.7, 1, 0.7],
+                y: 0,
+                scale: [0.98, 1, 0.98],
+              }}
+              transition={{
+                opacity: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
+                scale: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
+                y: { duration: 1.5, ease: 'easeOut' },
+              }}
+              className="relative w-[400px] h-[135px]"
+            >
+              <Image
+                src="/images/assets/Opera_senza_titolo-5 2.png"
+                alt="NINARÒ"
+                fill
+                className="object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                priority
+              />
+            </motion.div>
+          </div>
+
         </div>
       </div>
-      
-      {/* Decorative Overlays */}
-      <div className="absolute inset-0 z-0 bg-radial-gradient from-transparent via-transparent to-black/40 pointer-events-none" />
     </div>
   )
 }
