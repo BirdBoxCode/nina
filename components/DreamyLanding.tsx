@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import { Canvas, useFrame, extend, ThreeElement } from '@react-three/fiber'
 import { Float, PerspectiveCamera, useTexture, shaderMaterial } from '@react-three/drei'
 import * as THREE from 'three'
@@ -110,7 +110,26 @@ function ButterflyLogo() {
   )
 }
 
+const NAV_ITEMS = [
+  { label: 'murals', href: '/walls' },
+  { label: 'paintings', href: '/paintings' },
+  { label: 'illustrations', href: '/illustration' },
+  { label: 'installations', href: '/installations' },
+  { label: 'about me', href: '/bio-contact' },
+  { label: 'shop', href: '/shop' },
+  { label: 'contact', href: '/contact' },
+  { label: 'tattoos', href: '/?v=tattoo' },
+  { label: 'do your own', href: '/workshops' },
+]
+
+// Torn paper left-edge clip-path (irregular points simulate torn paper)
+const TORN_CLIP =
+  'polygon(6% 0%, 2% 3%, 7% 7%, 1% 11%, 5% 15%, 0% 19%, 4% 23%, 7% 27%, 1% 31%, 5% 35%, 2% 39%, 6% 43%, 0% 47%, 4% 51%, 7% 55%, 1% 59%, 5% 63%, 2% 67%, 6% 71%, 0% 75%, 4% 79%, 7% 83%, 1% 87%, 5% 91%, 2% 95%, 6% 100%, 100% 100%, 100% 0%)'
+
 export function DreamyLanding() {
+  const [navOpen, setNavOpen] = useState(false)
+  const [edgeHovered, setEdgeHovered] = useState(false)
+
   return (
     <div className="relative w-full min-h-screen flex items-center justify-center bg-[#FBFFFF]">
       <PaperCrinkle />
@@ -120,10 +139,17 @@ export function DreamyLanding() {
         <div className="relative flex h-[987px] px-[30px] py-[10px] justify-center items-center flex-shrink-0 self-stretch">
 
           {/* icon-wrapper */}
-          <div className="absolute left-[30px] top-[99px] flex flex-col items-start py-[1px] gap-[10px]">
-            <Image src="/images/assets/icons/icon 1.png" alt="" width={70} height={70} />
-            <Image src="/images/assets/icons/icon 2.png" alt="" width={70} height={70} />
-            <Image src="/images/assets/icons/icon 3.png" alt="" width={70} height={70} />
+          <div className="absolute left-[30px] top-[99px] flex flex-col items-start py-[1px] gap-[10px] z-50">
+            {[1, 2, 3].map((n) => (
+              <button
+                key={n}
+                onClick={() => setNavOpen((v) => !v)}
+                className="cursor-pointer focus:outline-none"
+                aria-label="Toggle navigation"
+              >
+                <Image src={`/images/assets/icons/icon ${n}.png`} alt="" width={64} height={64} />
+              </button>
+            ))}
           </div>
 
           {/* logo-wrapper */}
@@ -164,6 +190,44 @@ export function DreamyLanding() {
               />
             </motion.div>
           </div>
+
+          {/* Click-outside overlay */}
+          {navOpen && (
+            <div
+              className="fixed inset-0 z-30"
+              onClick={() => setNavOpen(false)}
+            />
+          )}
+
+          {/* Nav drawer */}
+          <motion.div
+            className={`fixed top-0 h-full w-[284px] z-40${!navOpen ? ' cursor-pointer' : ''}`}
+            animate={{ x: navOpen ? 0 : edgeHovered ? 'calc(100% - 88px)' : 'calc(100% - 58px)' }}
+            initial={{ x: 'calc(100% - 58px)' }}
+            transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+            onMouseEnter={() => { if (!navOpen) setEdgeHovered(true) }}
+            onMouseLeave={() => setEdgeHovered(false)}
+            onClick={() => { if (!navOpen) { setNavOpen(true); setEdgeHovered(false) } }}
+            style={{
+              right: '-4px',
+              backgroundImage: "url('/images/assets/paper-bg.png')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              clipPath: TORN_CLIP,
+            }}
+          >
+            <nav className="flex flex-col items-end justify-center h-full pr-6 gap-[10px]">
+              {NAV_ITEMS.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="font-[family-name:var(--font-dancing-script)] text-[32px] leading-tight text-neutral-800 hover:text-neutral-500 transition-colors"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+          </motion.div>
 
         </div>
       </div>
