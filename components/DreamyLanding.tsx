@@ -195,6 +195,15 @@ export function DreamyLanding() {
           animation: 'breath-shadow 8s ease-in-out infinite',
         }}
       />
+      {/* surface texture image — very subtle multiply overlay */}
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden" style={{ opacity: 0.08, mixBlendMode: 'multiply' }}>
+        <Image
+          src="/images/assets/backgrounds/texture-overlay3.jpg"
+          alt=""
+          fill
+          className="object-cover"
+        />
+      </div>
       {/* grain texture overlay — SVG feTurbulence for organic paper surface */}
       <svg
         className="absolute inset-0 w-full h-full pointer-events-none z-0"
