@@ -22,6 +22,12 @@ export function CustomCursor() {
   const requestRef = useRef<number>(null)
   const lastTimeRef = useRef<number>(0)
   const mouseRef = useRef({ x: -100, y: -100 })
+  const cursorOverrideRef = useRef(cursorOverride)
+  const prevSpawnPosRef = useRef({ x: -100, y: -100 })
+
+  useEffect(() => {
+    cursorOverrideRef.current = cursorOverride
+  }, [cursorOverride])
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -49,14 +55,17 @@ export function CustomCursor() {
       if (lastTimeRef.current !== undefined) {
         const deltaTime = time - lastTimeRef.current
 
-        // Spawn new particles occasionally
-        if (Math.random() > 0.7 && isHovering) {
+        // Spawn new particles only while cursor is moving
+        const spawnPos = cursorOverrideRef.current ?? (isHovering ? mouseRef.current : null)
+        const hasMoved = spawnPos && (spawnPos.x !== prevSpawnPosRef.current.x || spawnPos.y !== prevSpawnPosRef.current.y)
+        if (Math.random() > 0.7 && hasMoved) {
+          prevSpawnPosRef.current = { x: spawnPos.x, y: spawnPos.y }
           const angle = Math.random() * Math.PI * 2
           const speed = Math.random() * 0.1 + 0.05
           const newParticle: Particle = {
             id: Date.now() + Math.random(),
-            x: mouseRef.current.x,
-            y: mouseRef.current.y,
+            x: spawnPos.x,
+            y: spawnPos.y,
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
             life: 1.0,
