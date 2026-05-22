@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import { Inter, Cinzel, Space_Mono, Dancing_Script } from "next/font/google";
+import { Inter, Cinzel, Space_Mono, Dancing_Script, Piazzolla } from "next/font/google";
 import "./globals.css";
 import { clsx } from "clsx";
 import { CustomCursor } from "@/components/CustomCursor";
+import { IntroProvider, MainContent } from "@/components/IntroContext";
+import { IntroOverlay } from "@/components/IntroOverlay";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -25,6 +27,12 @@ const dancingScript = Dancing_Script({
   subsets: ["latin"],
 });
 
+const piazzolla = Piazzolla({
+  variable: "--font-piazzolla",
+  subsets: ["latin"],
+  weight: ["300"],
+});
+
 export const metadata: Metadata = {
   title: "NINARO",
   description: "Art & Tattoo Portfolio",
@@ -43,11 +51,17 @@ export default function RootLayout({
           cinzel.variable,
           spaceMono.variable,
           dancingScript.variable,
+          piazzolla.variable,
           "font-sans min-h-screen flex flex-col bg-neutral-950 text-neutral-50 antialiased selection:bg-neutral-700 selection:text-white"
         )}
       >
-        <CustomCursor />
-        {children}
+        <IntroProvider>
+          <CustomCursor />
+          <IntroOverlay />
+          <MainContent>
+            {children}
+          </MainContent>
+        </IntroProvider>
       </body>
     </html>
   );

@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import { useIntro } from './IntroContext'
 
 interface Particle {
   id: number
@@ -14,6 +15,7 @@ interface Particle {
 }
 
 export function CustomCursor() {
+  const { cursorOverride } = useIntro()
   const [mousePos, setMousePos] = useState({ x: -100, y: -100 })
   const [isHovering, setIsHovering] = useState(false)
   const [particles, setParticles] = useState<Particle[]>([])
@@ -85,18 +87,21 @@ export function CustomCursor() {
     }
   }, [isHovering])
 
+  const effectivePos = cursorOverride ?? mousePos
+  const effectiveHovering = cursorOverride !== null || isHovering
+
   return (
-    <div className="fixed inset-0 pointer-events-none z-[9999]">
+    <div className="fixed inset-0 pointer-events-none z-[10000]">
       <AnimatePresence>
-        {isHovering && (
+        {effectiveHovering && (
           <motion.div
             className="absolute"
             initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ 
-              opacity: 1, 
+            animate={{
+              opacity: 1,
               scale: 1,
-              x: mousePos.x - 16, // Center the 32px cursor
-              y: mousePos.y - 16
+              x: effectivePos.x - 16,
+              y: effectivePos.y - 16
             }}
             exit={{ opacity: 0, scale: 0.5 }}
             transition={{ type: 'spring', damping: 25, stiffness: 250, mass: 0.5, opacity: { duration: 0.2 } }}
