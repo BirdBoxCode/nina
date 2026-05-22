@@ -155,9 +155,9 @@ function IconButton({
       <Image
         src={`/images/assets/icons/icon ${n}.png`}
         alt=""
-        width={14}
-        height={14}
-        className="w-8 h-8 sm:w-12 sm:h-12 md:w-16 md:h-16"
+        width={18}
+        height={18}
+        className="w-[18px] h-[18px] sm:w-[38px] sm:h-[38px] md:w-[54px] md:h-[54px]"
       />
     </motion.button>
   )
@@ -202,7 +202,7 @@ export function DreamyLanding() {
         <div className="relative flex flex-col items-center justify-center min-h-[987px] px-[30px] py-[10px] self-stretch">
 
           {/* icon-wrapper */}
-          <div ref={iconWrapperRef} className="flex flex-row gap-4 z-50 md:absolute md:flex-col md:left-[30px] md:top-[99px] md:items-start md:py-[1px] md:gap-[10px]">
+          <div ref={iconWrapperRef} className="flex flex-row gap-0 z-50 md:absolute md:flex-col md:left-[30px] md:top-[300px] md:items-start md:py-[1px] md:gap-0">
             {[1, 2, 3].map((n) => (
               <IconButton
                 key={n}
@@ -231,16 +231,8 @@ export function DreamyLanding() {
             <motion.div
               id="homepage-ninaro"
               initial={{ opacity: 0, y: 20 }}
-              animate={{
-                opacity: [0.7, 1, 0.7],
-                y: 0,
-                scale: [0.98, 1, 0.98],
-              }}
-              transition={{
-                opacity: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
-                scale: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
-                y: { duration: 1.5, ease: 'easeOut' },
-              }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ y: { duration: 1.5, ease: 'easeOut' }, opacity: { duration: 1.5, ease: 'easeOut' } }}
               className="relative w-[400px] h-[135px] -mt-[40px]"
             >
               <Image
