@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useEffect, useState, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 import { useIntro } from './IntroContext'
 
 interface Particle {
@@ -13,7 +15,7 @@ interface Particle {
 }
 
 export function CustomCursor() {
-  const { contentVisible } = useIntro()
+  const { contentVisible, cursorOverride } = useIntro()
   const [isHovering, setIsHovering] = useState(false)
   const [particles, setParticles] = useState<Particle[]>([])
   const particleColor = contentVisible ? '#2e3039' : '#ffffff'
@@ -86,6 +88,33 @@ export function CustomCursor() {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-[10000]">
+      <AnimatePresence>
+        {cursorOverride !== null && (
+          <motion.div
+            className="absolute"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              x: cursorOverride.x - 16,
+              y: cursorOverride.y - 16
+            }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 250, mass: 0.5, opacity: { duration: 0.2 } }}
+          >
+            <div className="relative w-8 h-8">
+              <Image
+                src="/images/assets/cursor.png"
+                alt="cursor"
+                width={32}
+                height={32}
+                className="object-contain"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {particles.map((p) => (
         <div
           key={p.id}
