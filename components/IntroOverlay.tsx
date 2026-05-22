@@ -117,14 +117,14 @@ export function IntroOverlay() {
         if (!el) return
         el.style.transition = 'opacity 1.1s ease-out, transform 1.1s ease-out'
         el.style.opacity = '1'
-        el.style.transform = `translate(calc(-50% + ${cap(dx, 320)}px), calc(-50% + ${cap(dy, 260)}px))`
+        el.style.transform = `translate(calc(-50% + ${cap(dx, 380)}px), calc(-50% + ${cap(dy, 260)}px))`
       }
       scatterAsset(bullRef.current,     -W * 0.36,  H * 0.32)
       scatterAsset(dragonRef.current,    W * 0.36, -H * 0.32)
       scatterAsset(marking2Ref.current,  W * 0.30,  H * 0.30)
       scatterAsset(markingRef.current,  -W * 0.42, -H * 0.08)
       scatterAsset(shellRef.current,    -W * 0.30, -H * 0.30)
-      scatterAsset(swordRef.current,     W * 0.42,  H * 0.08)
+      scatterAsset(swordRef.current,     W * 0.42, -H * 0.01)
     }, 1200)
 
     // Step 4 — corner brackets animate in (2500ms, 0.3s duration)
@@ -186,7 +186,7 @@ export function IntroOverlay() {
       if (whiteOverlayRef.current) whiteOverlayRef.current.style.opacity = '1'
     }, 4400)
 
-    // Step 7a — ninaro scales to match home size and center-aligns (5600ms)
+    // Step 7a — ninaro scales to match home size and center-aligns (5000ms)
     t(() => {
       const homepageNinaro = document.getElementById('homepage-ninaro')
       const introNinaro = ninaContainerRef.current
@@ -200,9 +200,9 @@ export function IntroOverlay() {
         ninaRef.current.style.transition = 'transform 0.3s ease-out'
         ninaRef.current.style.transform = `translate(${centerDeltaX}px, ${centerDeltaY}px) scale(${scale})`
       }
-    }, 5600)
+    }, 5000)
 
-    // Step 7b — cross-fade: overlay out, home content in (5900ms)
+    // Step 7b — cross-fade: overlay out, home content in (5300ms)
     t(() => {
       if (overlayRef.current) {
         overlayRef.current.style.transition = 'opacity 0.4s ease'
