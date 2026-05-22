@@ -20,12 +20,14 @@ export function IntroProvider({ children }: { children: React.ReactNode }) {
   const [contentVisible, setContentVisible] = useState(false)
   const [cursorOverride, setCursorOverrideState] = useState<{ x: number; y: number } | null>(null)
 
+  /*
   useEffect(() => {
     if (sessionStorage.getItem('introPlayed')) {
       setContentVisible(true)
     }
   }, [])
 
+  */
   const setCursorOverride = useCallback((pos: { x: number; y: number } | null) => {
     setCursorOverrideState(pos)
   }, [])

@@ -6,8 +6,8 @@ import { useIntro } from './IntroContext'
 // ninaro: 400×135 → displayed at 257px wide
 const NINA_W = 257
 const NINA_H = Math.round(NINA_W * (135 / 400)) // 87px
-// wings: 1009×431 → scale proportionally to ninaro display size
-const WINGS_W = Math.round(NINA_W * (1009 / 400)) // 648px
+// bg-wings: 2303×984
+const WINGS_W = 1000
 
 export function IntroOverlay() {
   const { showContent, setCursorOverride } = useIntro()
@@ -30,12 +30,6 @@ export function IntroOverlay() {
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
-    if (sessionStorage.getItem('introPlayed')) {
-      showContent()
-      setOverlayVisible(false)
-      return
-    }
-
     mouseRef.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
 
     const onMouseMove = (e: MouseEvent) => {
@@ -65,26 +59,35 @@ export function IntroOverlay() {
 
     // Cursor wanders around screen center for ~4s via waypoints (scaled ~2.1× from original)
     const cursorWaypoints: [number, number, number][] = [
-      [ 150, W * 0.88, H * 0.12],
-      [ 730, W * 0.70, H * 0.28],
-      [1090, W * 0.52, H * 0.42],
-      [1420, W * 0.36, H * 0.38],
-      [1740, W * 0.38, H * 0.54],
-      [2030, W * 0.56, H * 0.50],
-      [2320, W * 0.45, H * 0.44],
-      [2640, W * 0.54, H * 0.53],
-      [2960, W * 0.48, H * 0.47],
-      [3360, W * 0.51, H * 0.51],
-      [3780, W * 0.50, H * 0.50],
+      // — enter top-right, then linger and look around —
+      [ 150, W * 0.85, H * 0.13],  // arrive top-right
+      [ 860, W * 0.86, H * 0.16],  // slow drift (700ms — hovering)
+      [1070, W * 0.88, H * 0.14],  // micro counter-move (200ms — hesitation)
+
+      // — sudden dart to bottom-right, arrive and settle —
+      [1350, W * 0.79, H * 0.75],  // fast dart (280ms — whips across)
+      [1930, W * 0.76, H * 0.78],  // slow drift as it arrives (580ms)
+
+      // — dart across to bottom-left, hover —
+      [2190, W * 0.22, H * 0.72],  // fast dart (260ms)
+      [2760, W * 0.18, H * 0.70],  // settle and linger (570ms)
+      [2990, W * 0.20, H * 0.73],  // micro drift (230ms — looking around)
+
+      // — dart up to top-left, brief hover —
+      [3300, W * 0.15, H * 0.17],  // fast dart up (310ms)
+      [3660, W * 0.16, H * 0.15],  // hover (360ms)
+
+      // — quick dart toward top-center before settling —
+      [3780, W * 0.52, H * 0.11],  // fast dart (120ms — snappy)
     ]
     cursorWaypoints.forEach(([delay, x, y]) => {
       t(() => setCursorOverride({ x, y }), delay)
     })
 
-    // Step 2 — wings fade in (800ms)
+    // Step 2 — wings fade in (300ms)
     t(() => {
       if (wingsRef.current) wingsRef.current.style.opacity = '1'
-    }, 800)
+    }, 300)
 
     // Step 3 — text sequence (1200ms)
     t(() => {
@@ -159,10 +162,7 @@ export function IntroOverlay() {
 
       showContent()
 
-      t(() => {
-        setOverlayVisible(false)
-        sessionStorage.setItem('introPlayed', 'true')
-      }, 350)
+      t(() => setOverlayVisible(false), 350)
     }, 5600)
 
     return () => {
@@ -193,7 +193,7 @@ export function IntroOverlay() {
         {/* Wings — absolutely centered, behind ninaro */}
         <img
           ref={wingsRef}
-          src="/images/assets/components/wings-dark.png"
+          src="/images/assets/bg-wings.png"
           alt=""
           style={{
             position: 'absolute',
@@ -202,8 +202,9 @@ export function IntroOverlay() {
             transform: 'translate(-50%, -50%)',
             zIndex: 0,
             opacity: 0,
-            transition: 'opacity 0.2s ease',
+            transition: 'opacity 0.3s ease',
             width: WINGS_W,
+            maxWidth: 'none',
             height: 'auto',
             pointerEvents: 'none',
           }}
