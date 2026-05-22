@@ -229,6 +229,7 @@ export function DreamyLanding() {
 
             {/* NINARO Logo — opacity/scale pulse animation preserved */}
             <motion.div
+              id="homepage-ninaro"
               initial={{ opacity: 0, y: 20 }}
               animate={{
                 opacity: [0.7, 1, 0.7],
