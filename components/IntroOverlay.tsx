@@ -110,7 +110,7 @@ export function IntroOverlay() {
       }
     }, 2000)
 
-    // Step 3.5 — assets scatter from center (1800ms); earlier start allows slower travel without delaying the ending
+    // Step 3.5 — assets scatter from center (1200ms); starts with text animation, eases out to landing positions
     t(() => {
       const cap = (val: number, max: number) => Math.min(Math.abs(val), max) * Math.sign(val)
       const scatterAsset = (el: HTMLImageElement | null, dx: number, dy: number) => {
@@ -125,7 +125,7 @@ export function IntroOverlay() {
       scatterAsset(markingRef.current,  -W * 0.42, -H * 0.08)
       scatterAsset(shellRef.current,    -W * 0.30, -H * 0.30)
       scatterAsset(swordRef.current,     W * 0.42,  H * 0.08)
-    }, 1800)
+    }, 1200)
 
     // Step 4 — corner brackets animate in (2500ms, 0.3s duration)
     t(() => {
@@ -153,7 +153,7 @@ export function IntroOverlay() {
     t(() => {
       const gatherAsset = (el: HTMLImageElement | null) => {
         if (!el) return
-        el.style.transition = 'opacity 0.35s ease-in, transform 0.35s ease-in'
+        el.style.transition = 'opacity 0.18s ease-in, transform 0.18s ease-in'
         el.style.opacity = '0'
         el.style.transform = 'translate(-50%, -50%)'
       }
