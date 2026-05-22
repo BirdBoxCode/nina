@@ -131,10 +131,28 @@ export function IntroOverlay() {
       t(() => setCursorOverride(null), 200)
     }, 4000)
 
-    // Step 6 — wings + text fade out, background transitions to #FBFFFF (4400ms)
+    // Step 5.5 — text splits apart: ARTIST flies left, colon drops down, TATTOOIST flies right (4050ms)
+    t(() => {
+      if (artistRef.current) {
+        artistRef.current.style.transition = 'opacity 0.35s ease, transform 0.35s ease'
+        artistRef.current.style.opacity = '0'
+        artistRef.current.style.transform = 'translateX(-200px)'
+      }
+      if (colonRef.current) {
+        colonRef.current.style.transition = 'opacity 0.35s ease, transform 0.35s ease'
+        colonRef.current.style.opacity = '0'
+        colonRef.current.style.transform = 'translateY(80px)'
+      }
+      if (tattooistRef.current) {
+        tattooistRef.current.style.transition = 'opacity 0.35s ease, transform 0.35s ease'
+        tattooistRef.current.style.opacity = '0'
+        tattooistRef.current.style.transform = 'translateX(200px)'
+      }
+    }, 4050)
+
+    // Step 6 — wings fade out, background transitions to #FBFFFF (4400ms)
     t(() => {
       if (wingsRef.current) wingsRef.current.style.opacity = '0'
-      if (textContainerRef.current) textContainerRef.current.style.opacity = '0'
       if (overlayRef.current) {
         overlayRef.current.style.transition = 'background-color 0.4s ease'
         overlayRef.current.style.backgroundColor = '#FBFFFF'
