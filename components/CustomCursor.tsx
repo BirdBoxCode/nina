@@ -1,8 +1,6 @@
 'use client'
 
 import React, { useEffect, useState, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import Image from 'next/image'
 import { useIntro } from './IntroContext'
 
 interface Particle {
@@ -15,17 +13,16 @@ interface Particle {
 }
 
 export function CustomCursor() {
-  const { cursorOverride } = useIntro()
-  const [mousePos, setMousePos] = useState({ x: -100, y: -100 })
+  const { contentVisible } = useIntro()
   const [isHovering, setIsHovering] = useState(false)
   const [particles, setParticles] = useState<Particle[]>([])
+  const particleColor = contentVisible ? '#2e3039' : '#ffffff'
   const requestRef = useRef<number>(null)
   const lastTimeRef = useRef<number>(0)
   const mouseRef = useRef({ x: -100, y: -100 })
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY })
       mouseRef.current = { x: e.clientX, y: e.clientY }
       if (!isHovering) setIsHovering(true)
     }
@@ -87,48 +84,18 @@ export function CustomCursor() {
     }
   }, [isHovering])
 
-  const effectivePos = cursorOverride ?? mousePos
-  const effectiveHovering = cursorOverride !== null || isHovering
-
   return (
     <div className="fixed inset-0 pointer-events-none z-[10000]">
-      <AnimatePresence>
-        {effectiveHovering && (
-          <motion.div
-            className="absolute"
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              x: effectivePos.x - 16,
-              y: effectivePos.y - 16
-            }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 250, mass: 0.5, opacity: { duration: 0.2 } }}
-          >
-            <div className="relative w-8 h-8">
-              <Image 
-                src="/images/assets/cursor.png" 
-                alt="cursor" 
-                width={32} 
-                height={32} 
-                className="object-contain"
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Particle "Spitting" Effect */}
       {particles.map((p) => (
         <div
           key={p.id}
-          className="absolute w-1 h-1 bg-white rounded-full opacity-60"
+          className="absolute w-1 h-1 rounded-full"
           style={{
             left: p.x,
             top: p.y,
             opacity: p.life * 0.6,
             transform: `scale(${p.life})`,
+            backgroundColor: particleColor,
           }}
         />
       ))}
