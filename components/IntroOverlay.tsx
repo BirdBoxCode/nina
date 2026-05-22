@@ -141,8 +141,7 @@ export function IntroOverlay() {
       }
     }, 4400)
 
-    // Step 7 — ninaro shifts to final position, overlay fades, content appears (5600ms)
-    // Background transition completes at 4800ms; 5600ms gives 800ms breathing room after
+    // Step 7a — ninaro scales to match home size and center-aligns (5600ms)
     t(() => {
       const homepageNinaro = document.getElementById('homepage-ninaro')
       const introNinaro = ninaContainerRef.current
@@ -150,20 +149,25 @@ export function IntroOverlay() {
       if (homepageNinaro && introNinaro && ninaRef.current) {
         const homeRect = homepageNinaro.getBoundingClientRect()
         const introRect = introNinaro.getBoundingClientRect()
-        const deltaY = homeRect.top - introRect.top
+        const scale = homeRect.width / introRect.width
+        const centerDeltaY = (homeRect.top + homeRect.height / 2) - (introRect.top + introRect.height / 2)
+        const centerDeltaX = (homeRect.left + homeRect.width / 2) - (introRect.left + introRect.width / 2)
         ninaRef.current.style.transition = 'transform 0.3s ease-out'
-        ninaRef.current.style.transform = `translateY(${deltaY}px)`
+        ninaRef.current.style.transform = `translate(${centerDeltaX}px, ${centerDeltaY}px) scale(${scale})`
       }
+    }, 5600)
 
+    // Step 7b — cross-fade: overlay out, home content in (5900ms)
+    t(() => {
       if (overlayRef.current) {
-        overlayRef.current.style.transition = 'opacity 0.3s ease'
+        overlayRef.current.style.transition = 'opacity 0.4s ease'
         overlayRef.current.style.opacity = '0'
       }
 
       showContent()
 
-      t(() => setOverlayVisible(false), 350)
-    }, 5600)
+      t(() => setOverlayVisible(false), 450)
+    }, 5900)
 
     return () => {
       window.removeEventListener('mousemove', onMouseMove)
