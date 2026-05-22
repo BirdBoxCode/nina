@@ -90,25 +90,25 @@ export function IntroOverlay() {
       t(() => setCursorOverride({ x, y }), delay)
     })
 
-    // Step 3 — text sequence (1200ms)
+    // Step 3 — text sequence (900ms)
     t(() => {
       if (artistRef.current) {
         artistRef.current.style.opacity = '1'
         artistRef.current.style.transform = 'translateX(0)'
       }
-    }, 1200)
+    }, 900)
     t(() => {
       if (colonRef.current) {
         colonRef.current.style.opacity = '1'
         colonRef.current.style.transform = 'translateY(0)'
       }
-    }, 1600)
+    }, 1300)
     t(() => {
       if (tattooistRef.current) {
         tattooistRef.current.style.opacity = '1'
         tattooistRef.current.style.transform = 'translateX(0)'
       }
-    }, 2000)
+    }, 1700)
 
     // Step 3.5 — assets scatter from center (1200ms); starts with text animation, eases out to landing positions
     t(() => {
@@ -230,7 +230,7 @@ export function IntroOverlay() {
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        background: '#8a85c5 url(/images/assets/bg2.png) center center / cover no-repeat',
+        background: '#2E3039',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
