@@ -62,7 +62,7 @@ declare module '@react-three/fiber' {
 }
 
 function ButterflyLogo() {
-  const texture = useTexture('/images/assets/Opera_senza_titolo-4 2.png')
+  const texture = useTexture('/images/assets/opera-senza.png')
   const meshRef = useRef<THREE.Mesh>(null!)
   const materialRef = useRef<THREE.ShaderMaterial>(null!)
   const windowMouse = useRef(new THREE.Vector2(0, 0))
@@ -155,8 +155,8 @@ function IconButton({
       <Image
         src={`/images/assets/icons/icon ${n}.png`}
         alt=""
-        width={64}
-        height={64}
+        width={14}
+        height={14}
         className="w-8 h-8 sm:w-12 sm:h-12 md:w-16 md:h-16"
       />
     </motion.button>
@@ -195,26 +195,6 @@ export function DreamyLanding() {
           animation: 'breath-shadow 8s ease-in-out infinite',
         }}
       />
-      {/* surface texture image — very subtle multiply overlay */}
-      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden" style={{ opacity: 0.08, mixBlendMode: 'multiply' }}>
-        <Image
-          src="/images/assets/backgrounds/texture-overlay3.webp"
-          alt=""
-          fill
-          className="object-cover"
-        />
-      </div>
-      {/* grain texture overlay — SVG feTurbulence for organic paper surface */}
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-none z-0"
-        aria-hidden="true"
-      >
-        <filter id="grain-filter">
-          <feTurbulence type="fractalNoise" baseFrequency="0.68" numOctaves="4" stitchTiles="stitch" />
-          <feColorMatrix type="saturate" values="0" />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#grain-filter)" opacity="0.042" />
-      </svg>
       <PaperCrinkle />
       {/* section-hero */}
       <div className="flex flex-col items-center gap-[10px] max-w-[1100px] w-full">
@@ -263,7 +243,7 @@ export function DreamyLanding() {
               className="relative w-[400px] h-[135px] -mt-[40px]"
             >
               <Image
-                src="/images/assets/Opera_senza_titolo-5 2.png"
+                src="/images/assets/ninaro.png"
                 alt="NINARÒ"
                 fill
                 className="object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
