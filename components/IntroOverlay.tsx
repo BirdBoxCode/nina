@@ -30,6 +30,8 @@ export function IntroOverlay() {
   const shellRef = useRef<HTMLImageElement>(null)
   const swordRef = useRef<HTMLImageElement>(null)
 
+  const whiteOverlayRef = useRef<HTMLDivElement>(null)
+
   const mouseRef = useRef({ x: 0, y: 0 })
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
@@ -108,18 +110,14 @@ export function IntroOverlay() {
       }
     }, 2000)
 
-    // Step 4 — corner brackets animate in + assets burst from center (2500ms, 0.3s duration)
+    // Step 3.5 — assets scatter from center (1800ms); earlier start allows slower travel without delaying the ending
     t(() => {
-      if (tlHRef.current) tlHRef.current.style.width = '20px'
-      if (tlVRef.current) tlVRef.current.style.height = '20px'
-      if (brHRef.current) brHRef.current.style.width = '20px'
-      if (brVRef.current) brVRef.current.style.height = '20px'
-
+      const cap = (val: number, max: number) => Math.min(Math.abs(val), max) * Math.sign(val)
       const scatterAsset = (el: HTMLImageElement | null, dx: number, dy: number) => {
         if (!el) return
-        el.style.transition = 'opacity 0.45s ease-out, transform 0.45s ease-out'
+        el.style.transition = 'opacity 1.1s ease-out, transform 1.1s ease-out'
         el.style.opacity = '1'
-        el.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`
+        el.style.transform = `translate(calc(-50% + ${cap(dx, 320)}px), calc(-50% + ${cap(dy, 260)}px))`
       }
       scatterAsset(bullRef.current,     -W * 0.36,  H * 0.32)
       scatterAsset(dragonRef.current,    W * 0.36, -H * 0.32)
@@ -127,6 +125,14 @@ export function IntroOverlay() {
       scatterAsset(markingRef.current,  -W * 0.42, -H * 0.08)
       scatterAsset(shellRef.current,    -W * 0.30, -H * 0.30)
       scatterAsset(swordRef.current,     W * 0.42,  H * 0.08)
+    }, 1800)
+
+    // Step 4 — corner brackets animate in (2500ms, 0.3s duration)
+    t(() => {
+      if (tlHRef.current) tlHRef.current.style.width = '20px'
+      if (tlVRef.current) tlVRef.current.style.height = '20px'
+      if (brHRef.current) brHRef.current.style.width = '20px'
+      if (brVRef.current) brVRef.current.style.height = '20px'
     }, 2500)
 
     // Brackets animate back out after 0.9s hold (3700ms: in at 2500, anim 0.3s → done 2800, hold 0.9s → out 3700)
@@ -175,12 +181,9 @@ export function IntroOverlay() {
       }
     }, 4050)
 
-    // Step 6 — background transitions to #FBFFFF (4400ms)
+    // Step 6 — white layer fades in over gradient (4400ms)
     t(() => {
-      if (overlayRef.current) {
-        overlayRef.current.style.transition = 'background-color 0.4s ease'
-        overlayRef.current.style.backgroundColor = '#FBFFFF'
-      }
+      if (whiteOverlayRef.current) whiteOverlayRef.current.style.opacity = '1'
     }, 4400)
 
     // Step 7a — ninaro scales to match home size and center-aligns (5600ms)
@@ -227,13 +230,26 @@ export function IntroOverlay() {
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        backgroundColor: '#2e3039',
+        background: '#8a85c5 url(/images/assets/bg2.png) center center / cover no-repeat',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
+      {/* White layer that fades in at Step 6 to wipe over the gradient before homepage appears */}
+      <div
+        ref={whiteOverlayRef}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: '#FBFFFF',
+          opacity: 0,
+          transition: 'opacity 0.4s ease',
+          pointerEvents: 'none',
+        }}
+      />
+
       {/* Scattered assets — burst from center at bracket-in, converge back at text-split */}
       {[
         { ref: bullRef,     src: '/images/assets/components/bull.png',       w: 280, alt: '' },
@@ -284,11 +300,11 @@ export function IntroOverlay() {
         </div>
       </div>
 
-      {/* Text — 60px below ninaro bottom edge */}
+      {/* Text — 20px below ninaro bottom edge */}
       <div
         ref={textContainerRef}
         style={{
-          marginTop: 60,
+          marginTop: 20,
           position: 'relative',
           opacity: 1,
           transition: 'opacity 0.3s ease',
