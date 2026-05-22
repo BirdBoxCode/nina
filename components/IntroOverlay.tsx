@@ -6,8 +6,6 @@ import { useIntro } from './IntroContext'
 // ninaro: 400×135 → displayed at 257px wide
 const NINA_W = 257
 const NINA_H = Math.round(NINA_W * (135 / 400)) // 87px
-// bg-wings: 2303×984
-const WINGS_W = 1000
 
 export function IntroOverlay() {
   const { showContent, setCursorOverride } = useIntro()
@@ -16,7 +14,6 @@ export function IntroOverlay() {
   const overlayRef = useRef<HTMLDivElement>(null)
   const ninaContainerRef = useRef<HTMLDivElement>(null)
   const ninaRef = useRef<HTMLDivElement>(null)
-  const wingsRef = useRef<HTMLImageElement>(null)
   const textContainerRef = useRef<HTMLDivElement>(null)
   const artistRef = useRef<HTMLSpanElement>(null)
   const colonRef = useRef<HTMLSpanElement>(null)
@@ -25,6 +22,13 @@ export function IntroOverlay() {
   const tlVRef = useRef<HTMLDivElement>(null)
   const brHRef = useRef<HTMLDivElement>(null)
   const brVRef = useRef<HTMLDivElement>(null)
+
+  const bullRef = useRef<HTMLImageElement>(null)
+  const dragonRef = useRef<HTMLImageElement>(null)
+  const marking2Ref = useRef<HTMLImageElement>(null)
+  const markingRef = useRef<HTMLImageElement>(null)
+  const shellRef = useRef<HTMLImageElement>(null)
+  const swordRef = useRef<HTMLImageElement>(null)
 
   const mouseRef = useRef({ x: 0, y: 0 })
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([])
@@ -84,11 +88,6 @@ export function IntroOverlay() {
       t(() => setCursorOverride({ x, y }), delay)
     })
 
-    // Step 2 — wings fade in (300ms)
-    t(() => {
-      if (wingsRef.current) wingsRef.current.style.opacity = '1'
-    }, 300)
-
     // Step 3 — text sequence (1200ms)
     t(() => {
       if (artistRef.current) {
@@ -109,12 +108,25 @@ export function IntroOverlay() {
       }
     }, 2000)
 
-    // Step 4 — corner brackets animate in (2500ms, 0.3s duration)
+    // Step 4 — corner brackets animate in + assets burst from center (2500ms, 0.3s duration)
     t(() => {
       if (tlHRef.current) tlHRef.current.style.width = '20px'
       if (tlVRef.current) tlVRef.current.style.height = '20px'
       if (brHRef.current) brHRef.current.style.width = '20px'
       if (brVRef.current) brVRef.current.style.height = '20px'
+
+      const scatterAsset = (el: HTMLImageElement | null, dx: number, dy: number) => {
+        if (!el) return
+        el.style.transition = 'opacity 0.45s ease-out, transform 0.45s ease-out'
+        el.style.opacity = '1'
+        el.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`
+      }
+      scatterAsset(bullRef.current,     -W * 0.36,  H * 0.32)
+      scatterAsset(dragonRef.current,    W * 0.36, -H * 0.32)
+      scatterAsset(marking2Ref.current,  W * 0.30,  H * 0.30)
+      scatterAsset(markingRef.current,  -W * 0.42, -H * 0.08)
+      scatterAsset(shellRef.current,    -W * 0.30, -H * 0.30)
+      scatterAsset(swordRef.current,     W * 0.42,  H * 0.08)
     }, 2500)
 
     // Brackets animate back out after 0.9s hold (3700ms: in at 2500, anim 0.3s → done 2800, hold 0.9s → out 3700)
@@ -131,8 +143,21 @@ export function IntroOverlay() {
       t(() => setCursorOverride(null), 200)
     }, 4000)
 
-    // Step 5.5 — text splits apart: ARTIST flies left, colon drops down, TATTOOIST flies right (4050ms)
+    // Step 5.5 — text splits apart + assets converge back to center (4050ms)
     t(() => {
+      const gatherAsset = (el: HTMLImageElement | null) => {
+        if (!el) return
+        el.style.transition = 'opacity 0.35s ease-in, transform 0.35s ease-in'
+        el.style.opacity = '0'
+        el.style.transform = 'translate(-50%, -50%)'
+      }
+      gatherAsset(bullRef.current)
+      gatherAsset(dragonRef.current)
+      gatherAsset(marking2Ref.current)
+      gatherAsset(markingRef.current)
+      gatherAsset(shellRef.current)
+      gatherAsset(swordRef.current)
+
       if (artistRef.current) {
         artistRef.current.style.transition = 'opacity 0.35s ease, transform 0.35s ease'
         artistRef.current.style.opacity = '0'
@@ -150,9 +175,8 @@ export function IntroOverlay() {
       }
     }, 4050)
 
-    // Step 6 — wings fade out, background transitions to #FBFFFF (4400ms)
+    // Step 6 — background transitions to #FBFFFF (4400ms)
     t(() => {
-      if (wingsRef.current) wingsRef.current.style.opacity = '0'
       if (overlayRef.current) {
         overlayRef.current.style.transition = 'background-color 0.4s ease'
         overlayRef.current.style.backgroundColor = '#FBFFFF'
@@ -210,27 +234,35 @@ export function IntroOverlay() {
         justifyContent: 'center',
       }}
     >
-      {/* Logo container: wings + ninaro share a relative container sized to ninaro */}
-      <div ref={ninaContainerRef} style={{ position: 'relative', width: NINA_W }}>
-        {/* Wings — absolutely centered, behind ninaro */}
+      {/* Scattered assets — burst from center at bracket-in, converge back at text-split */}
+      {[
+        { ref: bullRef,     src: '/images/assets/components/bull.png',       w: 280, alt: '' },
+        { ref: dragonRef,   src: '/images/assets/components/dragon.png',     w: 260, alt: '' },
+        { ref: marking2Ref, src: '/images/assets/components/marking-2.png',  w: 220, alt: '' },
+        { ref: markingRef,  src: '/images/assets/components/marking.png',    w: 80,  alt: '' },
+        { ref: shellRef,    src: '/images/assets/components/shell.png',      w: 200, alt: '' },
+        { ref: swordRef,    src: '/images/assets/components/sword.png',      w: 70,  alt: '' },
+      ].map(({ ref, src, w, alt }) => (
         <img
-          ref={wingsRef}
-          src="/images/assets/bg-wings.png"
-          alt=""
+          key={src}
+          ref={ref}
+          src={src}
+          alt={alt}
           style={{
             position: 'absolute',
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            zIndex: 0,
-            opacity: 0,
-            transition: 'opacity 0.3s ease',
-            width: WINGS_W,
-            maxWidth: 'none',
+            width: w,
             height: 'auto',
+            opacity: 0,
             pointerEvents: 'none',
           }}
         />
+      ))}
+
+      {/* Logo container: wings + ninaro share a relative container sized to ninaro */}
+      <div ref={ninaContainerRef} style={{ position: 'relative', width: NINA_W }}>
         {/* Ninaro */}
         <div
           ref={ninaRef}
