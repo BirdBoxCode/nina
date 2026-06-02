@@ -285,6 +285,53 @@ export function DreamyLanding() {
               Coming Soon
             </motion.span>
           </div>
+
+          {/* === Scroll cue — bull line-art hinting Zone 3 below; click smooth-scrolls down === */}
+          <motion.button
+            type="button"
+            onClick={() =>
+              document.getElementById('zone-3')?.scrollIntoView({ behavior: 'smooth' })
+            }
+            initial={{ opacity: 0 }}
+            animate={contentVisible ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut', delay: 0.3 }}
+            aria-label="Scroll down to the gallery"
+            className="group absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 cursor-pointer pointer-events-auto"
+          >
+            {/* perpetual gentle bob — additive, does not touch existing animations */}
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 2, ease: 'easeInOut', repeat: Infinity }}
+              className="flex flex-col items-center gap-1"
+            >
+              <Image
+                src="/images/assets/components/bull.png"
+                alt=""
+                width={130}
+                height={85}
+                className="w-[100px] md:w-[130px] h-auto opacity-80 transition-opacity duration-500 group-hover:opacity-100"
+              />
+              <span className="font-[family-name:var(--font-dancing-script)] text-[16px] md:text-[18px] tracking-[0.2em] text-neutral-800 uppercase">
+                scroll
+              </span>
+              <svg
+                width="20"
+                height="12"
+                viewBox="0 0 20 12"
+                fill="none"
+                className="text-neutral-700"
+                aria-hidden="true"
+              >
+                <path
+                  d="M2 2L10 9L18 2"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </motion.div>
+          </motion.button>
         </section>
 
         {/* === Zone 2 — Navigation Right (always-visible grid paper panel with torn left edge) === */}
@@ -323,6 +370,7 @@ export function DreamyLanding() {
 
       {/* === Zone 3 — Scrollable Gallery (revealed below the fold) === */}
       <section
+        id="zone-3"
         className="relative w-full overflow-hidden"
         style={{ height: '60vh', backgroundColor: '#A2A7B4' }}
       >
