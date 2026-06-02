@@ -185,7 +185,7 @@ export function DreamyLanding() {
   }, [proximityScale])
 
   return (
-    <div className="relative w-full min-h-screen flex items-center justify-center bg-[#FBFFFF]">
+    <div className="relative w-full min-h-screen flex items-center justify-center">
       {/* ambient breathing shadow — slow warm vignette that pulses */}
       <div
         className="absolute inset-0 pointer-events-none z-0"
