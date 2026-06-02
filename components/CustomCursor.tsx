@@ -12,13 +12,13 @@ interface Particle {
   vx: number
   vy: number
   life: number
+  hue: number
 }
 
 export function CustomCursor() {
   const { contentVisible, cursorOverride } = useIntro()
   const [isHovering, setIsHovering] = useState(false)
   const [particles, setParticles] = useState<Particle[]>([])
-  const particleColor = contentVisible ? '#2e3039' : '#ffffff'
   const requestRef = useRef<number>(null)
   const lastTimeRef = useRef<number>(0)
   const mouseRef = useRef({ x: -100, y: -100 })
@@ -69,6 +69,7 @@ export function CustomCursor() {
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
             life: 1.0,
+            hue: (Date.now() / 15) % 360,
           }
           setParticles((prev) => [...prev.slice(-20), newParticle])
         }
@@ -127,13 +128,14 @@ export function CustomCursor() {
       {particles.map((p) => (
         <div
           key={p.id}
-          className="absolute w-1 h-1 rounded-full"
+          className="absolute w-1.5 h-1.5 rounded-full"
           style={{
             left: p.x,
             top: p.y,
-            opacity: p.life * 0.6,
+            opacity: p.life * 0.8,
             transform: `scale(${p.life})`,
-            backgroundColor: particleColor,
+            backgroundColor: `hsl(${p.hue}, 90%, 70%)`,
+            boxShadow: `0 0 ${6 * p.life}px hsl(${p.hue}, 90%, 70%)`,
           }}
         />
       ))}
