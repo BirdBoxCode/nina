@@ -5,7 +5,14 @@
       "Bash(xargs cat -n)",
       "Bash(sips *)",
       "WebFetch(domain:www.charlesb.me)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npx tsc *)",
+      "Bash(echo \"=== EXIT: $? ===\")",
+      "Bash(lsof -nP -iTCP -sTCP:LISTEN)",
+      "Bash(npx --no-install playwright --version)",
+      "Bash(npx next *)",
+      "Bash(npx eslint *)",
+      "Bash(echo \"exit:$?\")"
     ]
   }
 }
