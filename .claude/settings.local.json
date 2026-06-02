@@ -7,7 +7,9 @@
       "WebFetch(domain:www.charlesb.me)",
       "WebSearch",
       "Bash(npx tsc *)",
-      "Bash(echo \"=== EXIT: $? ===\")"
+      "Bash(echo \"=== EXIT: $? ===\")",
+      "Bash(lsof -nP -iTCP -sTCP:LISTEN)",
+      "Bash(npx --no-install playwright --version)"
     ]
   }
 }

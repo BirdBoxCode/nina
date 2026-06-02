@@ -232,7 +232,7 @@ export function DreamyLanding() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={contentVisible ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.25 }}
+            transition={{ duration: 0.3, ease: 'easeOut', delay: 0.15 }}
             className="absolute left-[6%] top-1/2 -translate-y-1/2 z-20 flex flex-col items-start gap-0 pointer-events-none">
 
             {[1, 2, 3].map((n) => (
@@ -246,7 +246,7 @@ export function DreamyLanding() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={contentVisible ? { opacity: 1 } : { opacity: 0 }}
-              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.1 }}
+              transition={{ duration: 0.3, ease: 'easeOut', delay: 0.08 }}
               className="w-[340px] h-[379px] md:w-[487px] md:h-[543px]">
               <Canvas gl={{ antialias: true, alpha: true }}>
                 <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={50} />
@@ -279,7 +279,7 @@ export function DreamyLanding() {
             <motion.span
               initial={{ opacity: 0, y: 20 }}
               animate={contentVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ y: { duration: 1.5, ease: 'easeOut' }, opacity: { duration: 1.5, ease: 'easeOut' } }}
+              transition={{ y: { duration: 0.35, ease: 'easeOut', delay: 0.18 }, opacity: { duration: 0.35, ease: 'easeOut', delay: 0.18 } }}
               className="mt-[10px] font-[family-name:var(--font-dancing-script)] font-light text-[18px] tracking-[0.25em] text-neutral-800 uppercase"
             >
               Coming Soon
@@ -291,7 +291,7 @@ export function DreamyLanding() {
         <motion.aside
           initial={{ opacity: 0 }}
           animate={contentVisible ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut', delay: 0.35 }}
+          transition={{ duration: 0.3, ease: 'easeOut', delay: 0.12 }}
           className="relative w-full md:w-1/2 min-h-[50vh] md:min-h-0 md:h-full z-10"
           style={{ filter: 'drop-shadow(-5px 0px 6px rgba(0,0,0,0.35))' }}
         >

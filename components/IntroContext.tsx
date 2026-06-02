@@ -50,7 +50,7 @@ export function MainContent({ children }: { children: React.ReactNode }) {
       style={{
         opacity: contentVisible ? 1 : 0,
         pointerEvents: contentVisible ? 'auto' : 'none',
-        transition: contentVisible ? 'opacity 0.4s ease' : 'none',
+        transition: 'opacity 0.25s ease',
       }}
     >
       {children}
