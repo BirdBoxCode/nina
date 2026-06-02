@@ -243,6 +243,16 @@ export function DreamyLanding() {
                 priority
               />
             </motion.div>
+
+            {/* Coming soon — matches intro subtitle type treatment */}
+            <motion.span
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ y: { duration: 1.5, ease: 'easeOut' }, opacity: { duration: 1.5, ease: 'easeOut' } }}
+              className="mt-[10px] font-[family-name:var(--font-dancing-script)] font-light text-[18px] tracking-[0.25em] text-neutral-800 uppercase"
+            >
+              Coming Soon
+            </motion.span>
           </div>
 
           {/* Click-outside overlay */}
