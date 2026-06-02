@@ -315,7 +315,7 @@ export function IntroOverlay() {
             display: 'flex',
             alignItems: 'center',
             gap: '0.5em',
-            fontFamily: 'var(--font-piazzolla)',
+            fontFamily: 'var(--font-dancing-script)',
             fontWeight: 300,
             fontSize: 18,
             color: '#FBFFFF',
@@ -359,7 +359,7 @@ export function IntroOverlay() {
         </div>
 
         {/* Top-left corner bracket */}
-        <div style={{ position: 'absolute', top: -6, left: -10 }}>
+        <div style={{ position: 'absolute', top: -11, left: -15 }}>
           <div
             ref={tlHRef}
             style={{
@@ -387,7 +387,7 @@ export function IntroOverlay() {
         </div>
 
         {/* Bottom-right corner bracket */}
-        <div style={{ position: 'absolute', bottom: -6, right: -10 }}>
+        <div style={{ position: 'absolute', bottom: -11, right: -15 }}>
           <div
             ref={brHRef}
             style={{

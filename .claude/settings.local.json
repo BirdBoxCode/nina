@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npm run *)",
       "Bash(xargs cat -n)",
-      "Bash(sips *)"
+      "Bash(sips *)",
+      "WebFetch(domain:www.charlesb.me)",
+      "WebSearch"
     ]
   }
 }
