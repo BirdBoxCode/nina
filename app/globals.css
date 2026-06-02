@@ -15,6 +15,15 @@
   50%       { opacity: 1;   }
 }
 
+/* Hide scrollbar for the horizontal gallery strip while keeping it scrollable */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Custom scrollbar for webkit */
 ::-webkit-scrollbar {
   width: 8px;

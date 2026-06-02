@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect } from 'react'
 import { Canvas, useFrame, extend, ThreeElement } from '@react-three/fiber'
 import { Float, PerspectiveCamera, useTexture, shaderMaterial } from '@react-three/drei'
 import * as THREE from 'three'
-import { motion, useMotionValue, useSpring, animate, type MotionValue } from 'framer-motion'
+import { motion, useMotionValue, useSpring, animate } from 'framer-motion'
 import Image from 'next/image'
 import { PaperCrinkle } from '@/components/PaperCrinkle'
 
@@ -96,12 +96,16 @@ function ButterflyLogo() {
   const LOGO_HEIGHT = 4
   const LOGO_WIDTH = LOGO_HEIGHT * (487 / 543)
 
+  // shaderMaterial infers uMap from its null default, so the texture needs a loose cast.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const uMap = texture as any
+
   return (
     <mesh ref={meshRef}>
       <planeGeometry args={[LOGO_WIDTH, LOGO_HEIGHT]} />
       <shimmerMaterial
         ref={materialRef}
-        uMap={texture as any}
+        uMap={uMap}
         transparent
         alphaTest={0.01}
         side={THREE.DoubleSide}
@@ -122,19 +126,15 @@ const NAV_ITEMS = [
   { label: 'do your own', href: '/workshops' },
 ]
 
-// Tor paper left-edge clip-path (irregular points simulate torn paper)
+// Torn paper left-edge clip-path (irregular points simulate torn paper)
 const TORN_CLIP =
   'polygon(6% 0%, 2% 3%, 7% 7%, 1% 11%, 5% 15%, 0% 19%, 4% 23%, 7% 27%, 1% 31%, 5% 35%, 2% 39%, 6% 43%, 0% 47%, 4% 51%, 7% 55%, 1% 59%, 5% 63%, 2% 67%, 6% 71%, 0% 75%, 4% 79%, 7% 83%, 1% 87%, 5% 91%, 2% 95%, 6% 100%, 100% 100%, 100% 0%)'
 
-function IconButton({
-  n,
-  scale,
-  onToggleNav,
-}: {
-  n: number
-  scale: MotionValue<number>
-  onToggleNav: () => void
-}) {
+// Mist gradient that dissolves the green into the grey gallery from the top
+const GALLERY_MIST =
+  'linear-gradient(0deg, rgba(255, 255, 255, 0.00) -0.68%, rgba(234, 255, 178, 0.00) 12.4%, #EAFFB2 89.99%)'
+
+function IconButton({ n }: { n: number }) {
   const rotation = useMotionValue(0)
 
   const handleHoverStart = () => {
@@ -145,12 +145,11 @@ function IconButton({
   }
 
   return (
-    <motion.button
-      onClick={onToggleNav}
+    <motion.div
       onHoverStart={handleHoverStart}
-      style={{ scale, rotate: rotation }}
-      className="cursor-pointer focus:outline-none"
-      aria-label="Toggle navigation"
+      style={{ rotate: rotation }}
+      className="pointer-events-auto"
+      aria-hidden="true"
     >
       <Image
         src={`/images/assets/icons/icon ${n}.png`}
@@ -159,64 +158,89 @@ function IconButton({
         height={18}
         className="w-[18px] h-[18px] sm:w-[38px] sm:h-[38px] md:w-[54px] md:h-[54px]"
       />
-    </motion.button>
+    </motion.div>
+  )
+}
+
+// Zone 3 gallery card: reveals on enter + tilts in 3D toward the cursor on hover
+function GalleryCard({ priority }: { priority?: boolean }) {
+  const rotateX = useMotionValue(0)
+  const rotateY = useMotionValue(0)
+  const springX = useSpring(rotateX, { stiffness: 150, damping: 15 })
+  const springY = useSpring(rotateY, { stiffness: 150, damping: 15 })
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const px = (e.clientX - rect.left) / rect.width - 0.5
+    const py = (e.clientY - rect.top) / rect.height - 0.5
+    rotateY.set(px * 12)
+    rotateX.set(-py * 12)
+  }
+
+  const reset = () => {
+    rotateX.set(0)
+    rotateY.set(0)
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+      style={{ perspective: 1000 }}
+      className="shrink-0"
+    >
+      <motion.div
+        onMouseMove={handleMouseMove}
+        onMouseLeave={reset}
+        style={{ rotateX: springX, rotateY: springY, transformStyle: 'preserve-3d' }}
+        className="relative w-[260px] h-[340px] md:w-[300px] md:h-[400px] overflow-hidden bg-neutral-200 shadow-[0_20px_40px_-20px_rgba(0,0,0,0.35)]"
+      >
+        <Image
+          src="/images/hero-art.jpg"
+          alt=""
+          fill
+          priority={priority}
+          sizes="(max-width: 768px) 260px, 300px"
+          className="object-cover transition-transform duration-700 ease-out hover:scale-105"
+        />
+      </motion.div>
+    </motion.div>
   )
 }
 
 export function DreamyLanding() {
-  const [navOpen, setNavOpen] = useState(false)
-  const [edgeHovered, setEdgeHovered] = useState(false)
-  const iconWrapperRef = useRef<HTMLDivElement>(null)
-  const proximityScale = useMotionValue(1)
-  const springScale = useSpring(proximityScale, { stiffness: 200, damping: 25 })
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!iconWrapperRef.current) return
-      const rect = iconWrapperRef.current.getBoundingClientRect()
-      const dx = Math.max(rect.left - e.clientX, 0, e.clientX - rect.right)
-      const dy = Math.max(rect.top - e.clientY, 0, e.clientY - rect.bottom)
-      const distance = Math.sqrt(dx * dx + dy * dy)
-      const t = Math.max(0, 1 - distance / 150)
-      proximityScale.set(1 + 0.2 * t)
-    }
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [proximityScale])
-
   return (
-    <div className="relative w-full min-h-screen flex items-center justify-center">
-      {/* ambient breathing shadow — slow warm vignette that pulses */}
-      <div
-        className="absolute inset-0 pointer-events-none z-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 85% 75% at 50% 50%, rgba(255,252,248,0) 0%, rgba(148,136,124,0.07) 55%, rgba(110,98,86,0.2) 100%)',
-          animation: 'breath-shadow 8s ease-in-out infinite',
-        }}
-      />
-      <PaperCrinkle />
-      {/* section-hero */}
-      <div className="flex flex-col items-center gap-[10px] max-w-[1100px] w-full">
-        {/* HERO-WRAPPER */}
-        <div className="relative flex flex-col items-center justify-center min-h-[987px] px-[30px] py-[10px] self-stretch">
+    <div className="relative w-full">
+      {/* === HERO: Zone 1 + Zone 2 — together fill the viewport height === */}
+      <div className="relative flex flex-col md:flex-row w-full md:h-screen">
 
-          {/* icon-wrapper */}
-          <div ref={iconWrapperRef} className="flex flex-row gap-0 z-50 md:absolute md:flex-col md:left-[30px] md:top-[300px] md:items-start md:py-[1px] md:gap-0">
+        {/* === Zone 1 — Hero Left (transparent so the global fluid marbled bg shows through) === */}
+        <section className="relative w-full md:w-1/2 min-h-[60vh] md:min-h-0 md:h-full flex items-center justify-center overflow-hidden py-16 md:py-0">
+          {/* ambient breathing shadow — slow warm vignette that pulses */}
+          <div
+            className="absolute inset-0 pointer-events-none z-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 85% 75% at 50% 50%, rgba(255,252,248,0) 0%, rgba(148,136,124,0.07) 55%, rgba(110,98,86,0.2) 100%)',
+              animation: 'breath-shadow 8s ease-in-out infinite',
+            }}
+          />
+          <PaperCrinkle />
+
+          {/* decorative cross/flower icons — vertical column, left side */}
+          <div className="absolute left-[6%] top-1/2 -translate-y-1/2 z-20 flex flex-col items-start gap-0 pointer-events-none">
+
             {[1, 2, 3].map((n) => (
-              <IconButton
-                key={n}
-                n={n}
-                scale={springScale}
-                onToggleNav={() => setNavOpen((v) => !v)}
-              />
+              <IconButton key={n} n={n} />
             ))}
           </div>
 
-          {/* logo-wrapper */}
-          <div className="flex flex-col justify-center items-center">
+          {/* logo group — vertically + horizontally centred within the zone */}
+          <div className="relative z-10 flex flex-col justify-center items-center">
             {/* Main Logo — shimmer + float animation preserved */}
-            <div className="w-[487px] h-[543px]">
+            <div className="w-[340px] h-[379px] md:w-[487px] md:h-[543px]">
               <Canvas gl={{ antialias: true, alpha: true }}>
                 <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={50} />
                 <ambientLight intensity={0.5} />
@@ -227,13 +251,13 @@ export function DreamyLanding() {
               </Canvas>
             </div>
 
-            {/* NINARO Logo — opacity/scale pulse animation preserved */}
+            {/* NINARO Logo — opacity/scale pulse animation preserved; id is the intro's landing target */}
             <motion.div
               id="homepage-ninaro"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ y: { duration: 1.5, ease: 'easeOut' }, opacity: { duration: 1.5, ease: 'easeOut' } }}
-              className="relative w-[400px] h-[135px] -mt-[40px]"
+              className="relative w-[280px] h-[95px] md:w-[400px] md:h-[135px] -mt-[40px]"
             >
               <Image
                 src="/images/assets/ninaro.png"
@@ -254,54 +278,58 @@ export function DreamyLanding() {
               Coming Soon
             </motion.span>
           </div>
+        </section>
 
-          {/* Click-outside overlay */}
-          {navOpen && (
-            <div
-              className="fixed inset-0 z-30"
-              onClick={() => setNavOpen(false)}
-            />
-          )}
-
-          {/* Nav drawer */}
-          <motion.div
-            className={`fixed top-0 h-full w-[284px] z-40${!navOpen ? ' cursor-pointer' : ''}`}
-            animate={{ x: navOpen ? 0 : edgeHovered ? 'calc(100% - 88px)' : 'calc(100% - 58px)' }}
-            initial={{ x: 'calc(100% - 58px)' }}
-            transition={{ type: 'spring', stiffness: 260, damping: 28 }}
-            onMouseEnter={() => { if (!navOpen) setEdgeHovered(true) }}
-            onMouseLeave={() => setEdgeHovered(false)}
-            onClick={() => { if (!navOpen) { setNavOpen(true); setEdgeHovered(false) } }}
+        {/* === Zone 2 — Navigation Right (always-visible grid paper panel with torn left edge) === */}
+        <aside
+          className="relative w-full md:w-1/2 min-h-[50vh] md:min-h-0 md:h-full z-10"
+          style={{ filter: 'drop-shadow(-5px 0px 6px rgba(0,0,0,0.35))' }}
+        >
+          <div
+            className="w-full h-full"
             style={{
-              right: '-4px',
-              filter: 'drop-shadow(-5px 0px 6px rgba(0,0,0,0.35))',
+              backgroundImage: "url('/images/assets/paper-bg.png')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              clipPath: TORN_CLIP,
             }}
           >
-            <div
-              className="w-full h-full"
-              style={{
-                backgroundImage: "url('/images/assets/paper-bg.png')",
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                clipPath: TORN_CLIP,
-              }}
-            >
-            <nav className="flex flex-col items-end justify-center h-full pr-6 gap-[10px]">
+            <nav className="flex flex-col items-end justify-center h-full pr-8 md:pr-12 gap-[6px]">
               {NAV_ITEMS.map((item) => (
                 <a
                   key={item.href}
                   href={item.href}
-                  className="font-[family-name:var(--font-dancing-script)] text-[32px] leading-tight text-neutral-800 hover:text-neutral-500 transition-colors"
+                  className="group relative font-[family-name:var(--font-dancing-script)] text-[28px] md:text-[32px] leading-tight text-neutral-800 transition-colors duration-500 hover:text-neutral-500"
                 >
                   {item.label}
+                  <span className="pointer-events-none absolute right-0 -bottom-0.5 h-px w-0 bg-current transition-all duration-500 ease-out group-hover:w-full" />
                 </a>
               ))}
             </nav>
-            </div>
-          </motion.div>
-
-        </div>
+          </div>
+        </aside>
       </div>
+
+      {/* === Zone 3 — Scrollable Gallery (revealed below the fold) === */}
+      <section
+        className="relative w-full overflow-hidden"
+        style={{ height: '60vh', backgroundColor: '#A2A7B4' }}
+      >
+        {/* coloured mist dissolving into the grey from the top */}
+        <div
+          className="absolute inset-x-0 top-0 h-[45%] pointer-events-none z-0"
+          style={{ background: GALLERY_MIST }}
+        />
+
+        {/* editorial strip — tilt-on-hover cards, horizontally scrollable */}
+        <div className="relative z-10 h-full flex items-center">
+          <div className="flex items-center gap-8 md:gap-10 h-full px-8 md:px-16 overflow-x-auto overflow-y-hidden no-scrollbar">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <GalleryCard key={i} priority={i === 0} />
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
