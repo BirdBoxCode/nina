@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import { motion, useMotionValue, useSpring, animate } from 'framer-motion'
 import Image from 'next/image'
 import { PaperCrinkle } from '@/components/PaperCrinkle'
+import { useIntro } from '@/components/IntroContext'
 
 // --- Custom Shimmer Material ---
 const ShimmerMaterial = shaderMaterial(
@@ -207,6 +208,8 @@ function GalleryCard({ priority }: { priority?: boolean }) {
 }
 
 export function DreamyLanding() {
+  const { contentVisible } = useIntro()
+
   return (
     <div className="relative w-full">
       {/* === HERO: Zone 1 + Zone 2 — together fill the viewport height === */}
@@ -226,17 +229,25 @@ export function DreamyLanding() {
           <PaperCrinkle />
 
           {/* decorative cross/flower icons — vertical column, left side */}
-          <div className="absolute left-[6%] top-1/2 -translate-y-1/2 z-20 flex flex-col items-start gap-0 pointer-events-none">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={contentVisible ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.25 }}
+            className="absolute left-[6%] top-1/2 -translate-y-1/2 z-20 flex flex-col items-start gap-0 pointer-events-none">
 
             {[1, 2, 3].map((n) => (
               <IconButton key={n} n={n} />
             ))}
-          </div>
+          </motion.div>
 
           {/* logo group — vertically + horizontally centred within the zone */}
           <div className="relative z-10 flex flex-col justify-center items-center">
             {/* Main Logo — shimmer + float animation preserved */}
-            <div className="w-[340px] h-[379px] md:w-[487px] md:h-[543px]">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={contentVisible ? { opacity: 1 } : { opacity: 0 }}
+              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.1 }}
+              className="w-[340px] h-[379px] md:w-[487px] md:h-[543px]">
               <Canvas gl={{ antialias: true, alpha: true }}>
                 <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={50} />
                 <ambientLight intensity={0.5} />
@@ -245,14 +256,14 @@ export function DreamyLanding() {
                   <ButterflyLogo />
                 </Float>
               </Canvas>
-            </div>
+            </motion.div>
 
             {/* NINARO Logo — opacity/scale pulse animation preserved; id is the intro's landing target */}
             <motion.div
               id="homepage-ninaro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ y: { duration: 1.5, ease: 'easeOut' }, opacity: { duration: 1.5, ease: 'easeOut' } }}
+              initial={{ opacity: 0 }}
+              animate={contentVisible ? { opacity: 1 } : { opacity: 0 }}
+              transition={{ opacity: { duration: 1.5, ease: 'easeOut' } }}
               className="relative w-[280px] h-[95px] md:w-[400px] md:h-[135px] -mt-[40px]"
             >
               <Image
@@ -267,7 +278,7 @@ export function DreamyLanding() {
             {/* Coming soon — matches intro subtitle type treatment */}
             <motion.span
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={contentVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
               transition={{ y: { duration: 1.5, ease: 'easeOut' }, opacity: { duration: 1.5, ease: 'easeOut' } }}
               className="mt-[10px] font-[family-name:var(--font-dancing-script)] font-light text-[18px] tracking-[0.25em] text-neutral-800 uppercase"
             >
@@ -277,7 +288,10 @@ export function DreamyLanding() {
         </section>
 
         {/* === Zone 2 — Navigation Right (always-visible grid paper panel with torn left edge) === */}
-        <aside
+        <motion.aside
+          initial={{ opacity: 0 }}
+          animate={contentVisible ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: 0.8, ease: 'easeOut', delay: 0.35 }}
           className="relative w-full md:w-1/2 min-h-[50vh] md:min-h-0 md:h-full z-10"
           style={{ filter: 'drop-shadow(-5px 0px 6px rgba(0,0,0,0.35))' }}
         >
@@ -291,12 +305,12 @@ export function DreamyLanding() {
               backgroundSize: '72px 72px',
             }}
           >
-            <nav className="flex flex-col items-end justify-center h-full pr-8 md:pr-12 gap-[6px]">
+            <nav className="flex flex-col items-end justify-center h-full pr-8 md:pr-12 gap-[10px]">
               {NAV_ITEMS.map((item) => (
                 <a
                   key={item.href}
                   href={item.href}
-                  className="group relative font-[family-name:var(--font-dancing-script)] text-[28px] md:text-[32px] leading-tight text-neutral-800 transition-colors duration-500 hover:text-neutral-500"
+                  className="group relative font-[family-name:var(--font-dancing-script)] text-[34px] md:text-[44px] leading-tight text-neutral-800 transition-colors duration-500 hover:text-neutral-500"
                 >
                   {item.label}
                   <span className="pointer-events-none absolute right-0 -bottom-0.5 h-px w-0 bg-current transition-all duration-500 ease-out group-hover:w-full" />
@@ -304,7 +318,7 @@ export function DreamyLanding() {
               ))}
             </nav>
           </div>
-        </aside>
+        </motion.aside>
       </div>
 
       {/* === Zone 3 — Scrollable Gallery (revealed below the fold) === */}
