@@ -122,7 +122,7 @@ const NAV_ITEMS = [
   { label: 'do your own', href: '/workshops' },
 ]
 
-// Torn paper left-edge clip-path (irregular points simulate torn paper)
+// Tor paper left-edge clip-path (irregular points simulate torn paper)
 const TORN_CLIP =
   'polygon(6% 0%, 2% 3%, 7% 7%, 1% 11%, 5% 15%, 0% 19%, 4% 23%, 7% 27%, 1% 31%, 5% 35%, 2% 39%, 6% 43%, 0% 47%, 4% 51%, 7% 55%, 1% 59%, 5% 63%, 2% 67%, 6% 71%, 0% 75%, 4% 79%, 7% 83%, 1% 87%, 5% 91%, 2% 95%, 6% 100%, 100% 100%, 100% 0%)'
 
