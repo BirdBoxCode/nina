@@ -12,7 +12,8 @@
       "Bash(npx --no-install playwright --version)",
       "Bash(npx next *)",
       "Bash(npx eslint *)",
-      "Bash(echo \"exit:$?\")"
+      "Bash(echo \"exit:$?\")",
+      "Bash(echo \"exit=$?\")"
     ]
   }
 }

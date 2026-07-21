@@ -1,1 +1,6 @@
-import { createPortfolioPage } from '@/components/GeneralPortfolioPage'; export default createPortfolioPage('Walls', 'Murals');
+import { ArtGallery } from '@/components/ArtGallery'
+import { getByCategory } from '@/lib/artworks'
+
+export default function MuralsPage() {
+  return <ArtGallery category="murals" pieces={getByCategory('murals')} />
+}

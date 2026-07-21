@@ -1,3 +1,5 @@
+import type { ArtCategory } from '@/lib/artworks'
+
 export type SiteVariant = 'main' | 'art' | 'tattoo'
 
 export const SITE_CONFIG = {
@@ -37,6 +39,16 @@ export const SITE_CONFIG = {
     ],
   },
 }
+
+/** Shared nav for the gallery subpages and artwork detail pages. */
+export const ARTWORK_NAV: { label: string; href: string; category?: ArtCategory }[] = [
+  { label: 'Murals', href: '/walls', category: 'murals' },
+  { label: 'Paintings', href: '/paintings', category: 'paintings' },
+  { label: 'Illustrations', href: '/illustration', category: 'illustrations' },
+  { label: 'Installations', href: '/installations', category: 'installations' },
+  { label: 'About', href: '/bio-contact' },
+  { label: 'Contact', href: '/contact' },
+]
 
 export const CONTENT = {
   art: {
