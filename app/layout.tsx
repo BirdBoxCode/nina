@@ -6,6 +6,7 @@ import { CustomCursor } from "@/components/CustomCursor";
 import { FluidBackground } from "@/components/FluidBackground";
 import { IntroProvider, MainContent } from "@/components/IntroContext";
 import { IntroOverlay } from "@/components/IntroOverlay";
+import { PageTransitionProvider } from "@/components/PageTransition";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -60,9 +61,11 @@ export default function RootLayout({
         <IntroProvider>
           <CustomCursor />
           <IntroOverlay />
-          <MainContent>
-            {children}
-          </MainContent>
+          <PageTransitionProvider>
+            <MainContent>
+              {children}
+            </MainContent>
+          </PageTransitionProvider>
         </IntroProvider>
       </body>
     </html>

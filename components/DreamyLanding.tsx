@@ -8,6 +8,7 @@ import { motion, useMotionValue, useSpring, animate } from 'framer-motion'
 import Image from 'next/image'
 import { PaperCrinkle } from '@/components/PaperCrinkle'
 import { useIntro } from '@/components/IntroContext'
+import { TransitionLink } from '@/components/PageTransition'
 
 // --- Custom Shimmer Material ---
 const ShimmerMaterial = shaderMaterial(
@@ -217,6 +218,9 @@ export function DreamyLanding() {
 
         {/* === Zone 1 — Hero Left (transparent so the global fluid marbled bg shows through) === */}
         <section className="relative w-full md:w-1/2 min-h-[60vh] md:min-h-0 md:h-full flex items-center justify-center overflow-hidden py-16 md:py-0">
+          {/* solid paper surface — sits under the crinkle + vignette */}
+          <div className="absolute inset-0 z-0" style={{ backgroundColor: 'var(--Blue-Background)' }} />
+
           {/* ambient breathing shadow — slow warm vignette that pulses */}
           <div
             className="absolute inset-0 pointer-events-none z-0"
@@ -334,34 +338,24 @@ export function DreamyLanding() {
           </motion.button>
         </section>
 
-        {/* === Zone 2 — Navigation Right (always-visible grid paper panel with torn left edge) === */}
+        {/* === Zone 2 — Navigation Right (flat indigo panel, no seam shadow) === */}
         <motion.aside
           initial={{ opacity: 0 }}
           animate={contentVisible ? { opacity: 1 } : { opacity: 0 }}
           transition={{ duration: 0.3, ease: 'easeOut', delay: 0.12 }}
           className="relative w-full md:w-1/2 min-h-[50vh] md:min-h-0 md:h-full z-10"
-          style={{ filter: 'drop-shadow(-5px 0px 6px rgba(0,0,0,0.35))' }}
         >
-          <div
-            className="w-full h-full"
-            style={{
-              backgroundColor: '#ffffff',
-              backgroundImage:
-                'linear-gradient(to right, #cbcbcb 1px, transparent 1px), ' +
-                'linear-gradient(to bottom, #cbcbcb 1px, transparent 1px)',
-              backgroundSize: '72px 72px',
-            }}
-          >
-            <nav className="flex flex-col items-end justify-center h-full pr-8 md:pr-12 gap-[10px]">
+          <div className="w-full h-full bg-[#3A2F63]">
+            <nav className="flex flex-col items-end justify-center h-full pr-10 md:pr-16 gap-[6px] md:gap-[8px]">
               {NAV_ITEMS.map((item) => (
-                <a
+                <TransitionLink
                   key={item.href}
                   href={item.href}
-                  className="group relative font-[family-name:var(--font-dancing-script)] text-[34px] md:text-[44px] leading-tight text-neutral-800 transition-colors duration-500 hover:text-neutral-500"
+                  className="group relative font-[family-name:var(--font-dancing-script)] text-[26px] md:text-[32px] leading-tight text-[#FBFFFF] transition-colors duration-500 hover:text-[#C0CCFC]"
                 >
                   {item.label}
                   <span className="pointer-events-none absolute right-0 -bottom-0.5 h-px w-0 bg-current transition-all duration-500 ease-out group-hover:w-full" />
-                </a>
+                </TransitionLink>
               ))}
             </nav>
           </div>
