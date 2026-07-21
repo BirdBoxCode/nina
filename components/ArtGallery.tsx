@@ -125,28 +125,32 @@ export function ArtGallery({
     >
       {/* Top bar — wordmark left, nav right */}
       <header className="sticky top-0 z-40 w-full backdrop-blur-sm" style={{ backgroundColor: HEADER_SURFACE }}>
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between px-6 py-6 md:px-10">
+        {/* Stacks on mobile: wordmark on its own row, nav as a swipeable strip.
+            Single row from md up, where all six labels fit comfortably. */}
+        <div className="mx-auto flex max-w-[1280px] flex-col gap-3 px-6 py-5 md:flex-row md:items-center md:justify-between md:gap-6 md:px-10 md:py-6">
           <TransitionLink
             href="/"
-            className="text-[13px] uppercase tracking-[0.3em]"
+            className="shrink-0 text-[13px] uppercase tracking-[0.3em]"
             style={{ color: INK }}
           >
             Ninarò
           </TransitionLink>
 
-          <nav className="flex gap-5 md:gap-9">
+          {/* -mx-6/px-6 lets the strip bleed to the screen edges while keeping
+              the first and last labels clear of them when scrolled to either end. */}
+          <nav className="no-scrollbar -mx-6 flex gap-6 overflow-x-auto px-6 md:mx-0 md:gap-9 md:overflow-x-visible md:px-0">
             {ARTWORK_NAV.map((item) => {
               const active = item.category === category
               return (
                 <TransitionLink
                   key={item.href}
                   href={item.href}
-                  className="group relative text-[10px] uppercase tracking-[0.25em] md:text-[11px]"
+                  className="group relative shrink-0 whitespace-nowrap py-1 text-[10px] uppercase tracking-[0.25em] md:py-0 md:text-[11px]"
                   style={{ color: INK, opacity: active ? 1 : 0.5 }}
                 >
                   {item.label}
                   <span
-                    className="pointer-events-none absolute -bottom-1.5 left-0 h-px bg-current transition-all duration-500 ease-out group-hover:w-full"
+                    className="pointer-events-none absolute -bottom-0.5 left-0 h-px bg-current transition-all duration-500 ease-out group-hover:w-full md:-bottom-1.5"
                     style={{ width: active ? '100%' : 0 }}
                   />
                 </TransitionLink>
