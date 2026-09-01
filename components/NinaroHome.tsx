@@ -181,6 +181,9 @@ export function NinaroHome() {
   const [hover, setHover] = useState<number | null>(null)
   const [near, setNear] = useState(false)
   const [narrow, setNarrow] = useState(false)
+  const [nudge, setNudge] = useState<readonly number[]>(() => CATS.map(() => 0))
+  const logoRef = useRef<HTMLDivElement | null>(null)
+  const layerRef = useRef<HTMLDivElement | null>(null)
   const { register, revealStyle } = useReveal()
 
   // Below ~900px the scattered menu stacks into a centred column (same stagger).
@@ -212,6 +215,65 @@ export function NinaroHome() {
   // On narrow screens the stacked menu would sit on top of the logo, so the centre
   // cluster steps aside while it is open. Desktop keeps the logo visible as designed.
   const centreHidden = narrow && menuOpen
+
+  // The scattered labels sit on a fixed percentage grid, so at some viewport sizes one
+  // lands on the logo. Measure and push only the labels that actually collide outward;
+  // the designed scatter is untouched wherever it already fits. Narrow screens stack the
+  // menu and hide the centre cluster, so there is nothing to clear there.
+  useEffect(() => {
+    const GUTTER = 20
+    const EDGE = 12
+
+    const measure = () => {
+      const logo = logoRef.current
+      const layer = layerRef.current
+      if (narrow || !logo || !layer) {
+        setNudge((prev) => (prev.some((d) => d !== 0) ? CATS.map(() => 0) : prev))
+        return
+      }
+
+      const box = logo.getBoundingClientRect()
+      const origin = layer.getBoundingClientRect()
+      const next = CATS.map(() => 0)
+
+      layer.querySelectorAll<HTMLElement>('[data-nr-item]').forEach((el) => {
+        // Offset geometry is the resting position: it ignores the transform, so a nudge
+        // already applied — or one mid-transition — never feeds back into the next pass.
+        const left = origin.left + el.offsetLeft - el.offsetWidth / 2
+        const right = left + el.offsetWidth
+        const top = origin.top + el.offsetTop - el.offsetHeight / 2
+        const bottom = top + el.offsetHeight
+        if (bottom <= box.top - GUTTER || top >= box.bottom + GUTTER) return
+        if (right <= box.left - GUTTER || left >= box.right + GUTTER) return
+
+        // Clear it past the nearer edge of the logo, then keep it inside the viewport.
+        let dx =
+          (left + right) / 2 < (box.left + box.right) / 2
+            ? box.left - GUTTER - right
+            : box.right + GUTTER - left
+        if (left + dx < EDGE) dx = EDGE - left
+        if (right + dx > window.innerWidth - EDGE) dx = window.innerWidth - EDGE - right
+        next[Number(el.dataset.nrItem)] = Math.round(dx)
+      })
+
+      setNudge((prev) => (prev.every((d, i) => d === next[i]) ? prev : next))
+    }
+
+    let frame = 0
+    const schedule = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(measure)
+    }
+
+    schedule()
+    // Web fonts land after first paint and change the label widths.
+    document.fonts?.ready.then(schedule).catch(() => {})
+    window.addEventListener('resize', schedule)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('resize', schedule)
+    }
+  }, [narrow])
 
   return (
     <div
@@ -328,7 +390,7 @@ export function NinaroHome() {
             aria-label="Enter the game"
             aria-hidden={!near}
             tabIndex={near ? 0 : -1}
-            className="flex flex-col items-center gap-2.5 w-10 no-underline"
+            className="flex flex-col items-center gap-2.5 w-16 no-underline"
             style={{
               opacity: near ? 1 : 0,
               transform: near ? 'translateY(0)' : 'translateY(10px)',
@@ -339,16 +401,16 @@ export function NinaroHome() {
             <Image
               src={ART.ornament}
               alt=""
-              width={40}
-              height={46}
-              className="w-10 h-[46px] object-contain"
+              width={64}
+              height={74}
+              className="w-16 h-[74px] object-contain"
             />
             <span
               style={{
-                fontSize: '9px',
+                fontSize: '12px',
                 letterSpacing: '.22em',
                 textTransform: 'uppercase',
-                color: MUTED_LIGHT,
+                color: MUTED,
                 writingMode: 'vertical-rl',
               }}
             >
@@ -358,6 +420,7 @@ export function NinaroHome() {
 
           {/* Logo block */}
           <div
+            ref={logoRef}
             className="text-center"
             style={{ animation: `nr-fadeup 1.5s ${EASE} .1s both` }}
           >
@@ -386,11 +449,12 @@ export function NinaroHome() {
           </div>
 
           {/* Mirrors the game entry so the logo stays optically centred */}
-          <span className="w-10" aria-hidden="true" />
+          <span className="w-16" aria-hidden="true" />
         </div>
 
         {/* Scattered menu layer */}
         <div
+          ref={layerRef}
           className="absolute inset-0"
           style={{
             zIndex: menuOpen ? 25 : 5,
@@ -427,7 +491,9 @@ export function NinaroHome() {
               fontWeight: 300,
               whiteSpace: 'nowrap',
               color: hover === i ? ACCENT : hover === null ? INK : DIMMED,
-              transform: `translate(-50%,-50%) rotate(${narrow ? 0 : c.rot}deg) translateY(${menuOpen ? '0px' : '16px'})`,
+              transform:
+                `translate(-50%,-50%) translateX(${nudge[i] ?? 0}px) ` +
+                `rotate(${narrow ? 0 : c.rot}deg) translateY(${menuOpen ? '0px' : '16px'})`,
               opacity: menuOpen ? 1 : 0,
               transition:
                 `opacity .7s ${EASE} ${i * MENU_STAGGER}ms, ` +
@@ -436,6 +502,7 @@ export function NinaroHome() {
             }
             const shared = {
               style,
+              'data-nr-item': i,
               tabIndex: menuOpen ? 0 : -1,
               'aria-hidden': !menuOpen,
               onMouseEnter: () => setHover(i),
