@@ -38,3 +38,56 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* ---------------------------------------------------------------------------
+   NINARÒ home (components/NinaroHome.tsx)
+   Keyframes and page-scoped element styling for the paper-ground home page.
+   All names are nr-* prefixed and all rules are scoped to .nr-home.
+   --------------------------------------------------------------------------- */
+
+@keyframes nr-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes nr-grain {
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-3%, -2%, 0); }
+}
+@keyframes nr-breathe {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-9px) rotate(1.2deg); }
+}
+@keyframes nr-fadeup {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes nr-cue {
+  0%, 100% { transform: translateY(0); opacity: .5; }
+  50%      { transform: translateY(7px); opacity: 1; }
+}
+
+.nr-home ::selection {
+  background: rgba(145, 132, 217, 0.28);
+  color: #23222A;
+}
+
+.nr-home *:focus-visible {
+  outline: 2px solid #796cbf;
+  outline-offset: 3px;
+}
+
+/* Reduced motion: keep the composition, drop the movement. Lines land drawn,
+   grain and ornaments hold still, reveals fade without travelling. */
+@media (prefers-reduced-motion: reduce) {
+  .nr-home *,
+  .nr-home *::before,
+  .nr-home *::after {
+    animation: none !important;
+    transition-property: opacity !important;
+  }
+  .nr-home .nr-line {
+    stroke-dashoffset: 0 !important;
+  }
+  .nr-home [data-reveal-index] {
+    transform: none !important;
+  }
+}

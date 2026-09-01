@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 
 interface IntroContextType {
   contentVisible: boolean
@@ -17,14 +18,17 @@ const IntroContext = createContext<IntroContextType>({
 })
 
 export function IntroProvider({ children }: { children: React.ReactNode }) {
-  const [contentVisible, setContentVisible] = useState(false)
+  // The NINARÒ home page carries its own entrance animation, so the intro is skipped there
+  // and its content must not be gated behind the overlay's cross-fade.
+  const skipIntro = usePathname() === '/'
+  const [contentVisible, setContentVisible] = useState(skipIntro)
   const [cursorOverride, setCursorOverrideState] = useState<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
-    if (sessionStorage.getItem('introPlayed')) {
+    if (skipIntro || sessionStorage.getItem('introPlayed')) {
       setContentVisible(true)
     }
-  }, [])
+  }, [skipIntro])
 
   const setCursorOverride = useCallback((pos: { x: number; y: number } | null) => {
     setCursorOverrideState(pos)

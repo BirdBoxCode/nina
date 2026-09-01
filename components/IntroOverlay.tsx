@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { useIntro } from './IntroContext'
 
 // ninaro: 400×135 → displayed at 257px wide
@@ -9,6 +10,8 @@ const NINA_H = Math.round(NINA_W * (135 / 400)) // 87px
 
 export function IntroOverlay() {
   const { showContent, setCursorOverride } = useIntro()
+  // The NINARÒ home page opens with its own line-draw entrance; the intro does not play there.
+  const skipIntro = usePathname() === '/'
   const [overlayVisible, setOverlayVisible] = useState(true)
 
   const overlayRef = useRef<HTMLDivElement>(null)
@@ -36,6 +39,8 @@ export function IntroOverlay() {
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
+    if (skipIntro) return
+
     mouseRef.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
 
     const onMouseMove = (e: MouseEvent) => {
@@ -219,9 +224,9 @@ export function IntroOverlay() {
       timeoutsRef.current.forEach(clearTimeout)
       timeoutsRef.current = []
     }
-  }, [showContent, setCursorOverride])
+  }, [showContent, setCursorOverride, skipIntro])
 
-  if (!overlayVisible) return null
+  if (skipIntro || !overlayVisible) return null
 
   return (
     <div
