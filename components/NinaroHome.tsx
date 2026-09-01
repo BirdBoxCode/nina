@@ -36,6 +36,9 @@ const EASE = 'cubic-bezier(.2,.7,.2,1)'
 const DRAW_EASE = 'cubic-bezier(.22,.7,.2,1)'
 const MENU_STAGGER = 70
 
+/* How far the logo tilts, in degrees, with the cursor at the far edge of the viewport. */
+const LOGO_TILT = 7
+
 const GRAIN_URL =
   `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'>` +
   `<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/>` +
@@ -52,15 +55,15 @@ const GHOST_FILTER: React.CSSProperties = {
 const DARK_GHOSTS = new Set<string>([ART.marking2])
 
 const CATS = [
-  { label: 'MURALS', href: '/walls', left: '13%', top: '20%', rot: -3.5, ghost: ART.bull },
-  { label: 'PAINTINGS', href: '/paintings', left: '23%', top: '34%', rot: 2.5, ghost: ART.marking },
-  { label: 'ILLUSTRATIONS', href: '/illustration', left: '11%', top: '50%', rot: -1.5, ghost: ART.dragon },
-  { label: 'INSTALLATIONS', href: '/installations', left: '24%', top: '66%', rot: 4, ghost: ART.shell },
-  { label: 'STAGE DESIGN', href: '/stage-design', left: '68%', top: '21%', rot: 3.5, ghost: ART.marking2 },
-  { label: 'WORKSHOPS', href: '/workshops', left: '73%', top: '36%', rot: -2.5, ghost: ART.sword },
-  { label: 'ABOUT', href: '/bio-contact', left: '76%', top: '53%', rot: 1.5, ghost: ART.marking },
-  { label: 'SHOP', href: '/shop', left: '75%', top: '68%', rot: -4, ghost: ART.shell },
-  { label: 'TATTOOS ↗', href: 'https://lineacruda.com', left: '45%', top: '78%', rot: 1, ghost: ART.sword },
+  { label: 'Murals', href: '/walls', left: '13%', top: '20%', rot: -3.5, ghost: ART.bull },
+  { label: 'Paintings', href: '/paintings', left: '23%', top: '34%', rot: 2.5, ghost: ART.marking },
+  { label: 'Illustrations', href: '/illustration', left: '11%', top: '50%', rot: -1.5, ghost: ART.dragon },
+  { label: 'Installations', href: '/installations', left: '24%', top: '66%', rot: 4, ghost: ART.shell },
+  { label: 'Stage Design', href: '/stage-design', left: '75%', top: '21%', rot: 3.5, ghost: ART.marking2 },
+  { label: 'Workshops', href: '/workshops', left: '80%', top: '36%', rot: -2.5, ghost: ART.sword },
+  { label: 'About', href: '/bio-contact', left: '83%', top: '53%', rot: 1.5, ghost: ART.marking },
+  { label: 'Shop', href: '/shop', left: '82%', top: '68%', rot: -4, ghost: ART.shell },
+  { label: 'Tattoos ↗', href: 'https://lineacruda.com', left: '45%', top: '78%', rot: 1, ghost: ART.sword },
 ] as const
 
 /** The four self-drawing hero lines. Dash length doubles as the starting dashoffset. */
@@ -195,6 +198,9 @@ export function NinaroHome() {
   const [ghostBox, setGhostBox] = useState<
     { bottom: number; maxHeight: number; maxWidth: number | null } | null
   >(null)
+  // Cursor offset from the logo centre, normalised to -1..1 per axis. Drives both the
+  // parallax drift and where the sheen falls, so the two always agree.
+  const [glide, setGlide] = useState({ x: 0, y: 0 })
   const logoRef = useRef<HTMLDivElement | null>(null)
   const barRef = useRef<HTMLDivElement | null>(null)
   const layerRef = useRef<HTMLDivElement | null>(null)
@@ -207,6 +213,40 @@ export function NinaroHome() {
     sync()
     mq.addEventListener('change', sync)
     return () => mq.removeEventListener('change', sync)
+  }, [])
+
+  // Logo parallax. The transform lands on an inner wrapper, never on logoRef itself:
+  // nr-fadeup fills `both`, so its final `transform: none` would outrank an inline
+  // transform, and logoRef's box is the resting geometry the collision measure reads.
+  useEffect(() => {
+    // Touch devices only fire pointermove mid-drag, and the reduced-motion CSS at
+    // globals.css:80 cannot reach a transform written from JS — so both are gated here.
+    if (!window.matchMedia('(hover: hover)').matches) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    let frame = 0
+    const onMove = (e: PointerEvent) => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        const box = logoRef.current?.getBoundingClientRect()
+        if (!box) return
+        const cx = box.left + box.width / 2
+        const cy = box.top + box.height / 2
+        // Normalised against the viewport half-extent, so the drift reads the same
+        // whether the cursor crosses a laptop screen or an ultrawide.
+        const nx = Math.max(-1, Math.min(1, (e.clientX - cx) / (window.innerWidth / 2)))
+        const ny = Math.max(-1, Math.min(1, (e.clientY - cy) / (window.innerHeight / 2)))
+        setGlide((prev) =>
+          Math.abs(prev.x - nx) < 0.005 && Math.abs(prev.y - ny) < 0.005 ? prev : { x: nx, y: ny },
+        )
+      })
+    }
+
+    window.addEventListener('pointermove', onMove, { passive: true })
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('pointermove', onMove)
+    }
   }, [])
 
   useEffect(() => {
@@ -492,15 +532,57 @@ export function NinaroHome() {
             className="text-center"
             style={{ animation: `nr-fadeup 1.5s ${EASE} .1s both` }}
           >
-            <Image
-              src={ART.ninaro}
-              alt="NINARÒ"
-              width={1088}
-              height={350}
-              priority
-              className="block h-auto"
-              style={{ width: 'clamp(240px, 34vw, 470px)' }}
-            />
+            <div
+              style={{
+                // Position is pinned; only the plane turns. rotateY(+x) pushes the right
+                // edge back and rotateX(-y) the top, so the wordmark faces the cursor.
+                transform:
+                  `perspective(900px) ` +
+                  `rotateX(${(-glide.y * LOGO_TILT).toFixed(2)}deg) ` +
+                  `rotateY(${(glide.x * LOGO_TILT).toFixed(2)}deg)`,
+                transition: `transform .5s ${EASE}`,
+                willChange: 'transform',
+              }}
+            >
+              <div className="relative inline-block">
+                <Image
+                  src={ART.ninaro}
+                  alt="NINARÒ"
+                  width={1088}
+                  height={350}
+                  priority
+                  className="block h-auto"
+                  style={{ width: 'clamp(240px, 34vw, 470px)' }}
+                />
+                {/* Sheen. Masked by the wordmark itself, so the light falls on the
+                    letterforms rather than in a rectangle around them. */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    // Geometry fixed, placement moved: `circle at x% y%` lives inside
+                    // background-image and cannot transition, background-position can —
+                    // so the light trails the cursor on the same .5s as the drift.
+                    backgroundImage:
+                      'radial-gradient(circle, rgba(255,255,255,.45), rgba(255,255,255,0) 55%)',
+                    backgroundSize: '170% 170%',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: `${(50 + glide.x * 50).toFixed(1)}% ${(50 + glide.y * 50).toFixed(1)}%`,
+                    WebkitMaskImage: `url(${ART.ninaro})`,
+                    maskImage: `url(${ART.ninaro})`,
+                    WebkitMaskSize: 'contain',
+                    maskSize: 'contain',
+                    WebkitMaskRepeat: 'no-repeat',
+                    maskRepeat: 'no-repeat',
+                    WebkitMaskPosition: 'center',
+                    maskPosition: 'center',
+                    mixBlendMode: 'screen',
+                    transition: `background-position .5s ${EASE}`,
+                    willChange: 'background-position',
+                  }}
+                />
+              </div>
+            </div>
             <div className="mt-5 flex items-center justify-center gap-[14px]">
               <span
                 className="h-px w-[46px]"
@@ -563,10 +645,12 @@ export function NinaroHome() {
               position: 'absolute',
               left: narrow ? '50%' : c.left,
               top: narrow ? `${16 + i * 8.5}%` : c.top,
-              fontSize: 'clamp(15px, 1.5vw, 23px)',
-              letterSpacing: hover === i ? '.18em' : '.14em',
-              textTransform: 'uppercase',
-              fontWeight: 300,
+              fontFamily: 'var(--font-dancing-script)',
+              fontSize: 'clamp(19px, 1.9vw, 29px)',
+              // Open enough to breathe while the script still joins; the hover widening
+              // is the original gesture rescaled to this baseline, not a new one.
+              letterSpacing: hover === i ? '.11em' : '.07em',
+              fontWeight: 400,
               whiteSpace: 'nowrap',
               color: hover === i ? ACCENT : hover === null ? INK : DIMMED,
               transform:
@@ -694,7 +778,14 @@ export function NinaroHome() {
             ...revealStyle(WORKS.length + 1, 1.1, 22),
           }}
         >
-          <span style={{ ...MICRO, color: MUTED_LIGHT }}>NINARÒ — MILANO</span>
+          <Image
+            src={ART.ninaro}
+            alt="NINARÒ"
+            width={1088}
+            height={350}
+            className="block h-auto"
+            style={{ width: 'clamp(78px, 8vw, 104px)' }}
+          />
           <div className="flex gap-7">
             <TransitionLink href="/bio-contact" className="hover:text-[#5d5294]" style={MICRO}>
               ABOUT
