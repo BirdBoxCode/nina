@@ -53,9 +53,9 @@ const CATS = [
   { label: 'PAINTINGS', href: '/paintings', left: '23%', top: '34%', rot: 2.5, ghost: ART.marking },
   { label: 'ILLUSTRATIONS', href: '/illustration', left: '11%', top: '50%', rot: -1.5, ghost: ART.dragon },
   { label: 'INSTALLATIONS', href: '/installations', left: '24%', top: '66%', rot: 4, ghost: ART.shell },
-  { label: 'STAGE DESIGN', href: '/stage-design', left: '63%', top: '21%', rot: 3.5, ghost: ART.marking2 },
+  { label: 'STAGE DESIGN', href: '/stage-design', left: '68%', top: '21%', rot: 3.5, ghost: ART.marking2 },
   { label: 'WORKSHOPS', href: '/workshops', left: '73%', top: '36%', rot: -2.5, ghost: ART.sword },
-  { label: 'ABOUT', href: '/bio-contact', left: '66%', top: '53%', rot: 1.5, ghost: ART.marking },
+  { label: 'ABOUT', href: '/bio-contact', left: '71%', top: '53%', rot: 1.5, ghost: ART.marking },
   { label: 'SHOP', href: '/shop', left: '75%', top: '68%', rot: -4, ghost: ART.shell },
   { label: 'TATTOOS ↗', href: 'https://lineacruda.com', left: '45%', top: '78%', rot: 1, ghost: ART.sword },
 ] as const
@@ -185,9 +185,13 @@ export function NinaroHome() {
   const [near, setNear] = useState(false)
   const [narrow, setNarrow] = useState(false)
   const [nudge, setNudge] = useState<readonly number[]>(() => CATS.map(() => 0))
-  // Where the hover ghost sits: bottom-anchored just above the logo, capped to the room there.
-  const [ghostBox, setGhostBox] = useState<{ bottom: number; maxHeight: number } | null>(null)
+  // Where the hover ghost sits: bottom-anchored just above the logo, capped to the room
+  // between the top bar and the logo, and to the corridor the scattered labels leave open.
+  const [ghostBox, setGhostBox] = useState<
+    { bottom: number; maxHeight: number; maxWidth: number | null } | null
+  >(null)
   const logoRef = useRef<HTMLDivElement | null>(null)
+  const barRef = useRef<HTMLDivElement | null>(null)
   const layerRef = useRef<HTMLDivElement | null>(null)
   const { register, revealStyle } = useReveal()
 
@@ -202,14 +206,28 @@ export function NinaroHome() {
 
   useEffect(() => {
     if (!menuOpen) return
+    const close = () => {
+      setMenuOpen(false)
+      setHover(null)
+    }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setMenuOpen(false)
-        setHover(null)
-      }
+      if (e.key === 'Escape') close()
+    }
+    // Anything that is not a menu label dismisses. The top bar is excluded whole: this
+    // fires on pointerdown, so closing there would only be undone by the button's click.
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement | null
+      if (!target) return
+      if (target.closest('[data-nr-item]')) return
+      if (barRef.current?.contains(target)) return
+      close()
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('pointerdown', onPointerDown)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('pointerdown', onPointerDown)
+    }
   }, [menuOpen])
 
   const toggleMenu = () => {
@@ -241,6 +259,7 @@ export function NinaroHome() {
       const box = logo.getBoundingClientRect()
       const origin = layer.getBoundingClientRect()
       const next = CATS.map(() => 0)
+      const labels: { i: number; left: number; right: number; top: number; bottom: number }[] = []
 
       layer.querySelectorAll<HTMLElement>('[data-nr-item]').forEach((el) => {
         // Offset geometry is the resting position: it ignores the transform, so a nudge
@@ -249,6 +268,7 @@ export function NinaroHome() {
         const right = left + el.offsetWidth
         const top = origin.top + el.offsetTop - el.offsetHeight / 2
         const bottom = top + el.offsetHeight
+        labels.push({ i: Number(el.dataset.nrItem), left, right, top, bottom })
         if (bottom <= box.top - GUTTER || top >= box.bottom + GUTTER) return
         if (right <= box.left - GUTTER || left >= box.right + GUTTER) return
 
@@ -264,11 +284,32 @@ export function NinaroHome() {
 
       setNudge((prev) => (prev.every((d, i) => d === next[i]) ? prev : next))
 
-      // Clear the logo vertically as well: pin the art's bottom edge above the logo's top.
+      // Clear the logo vertically as well: pin the art's bottom edge above the logo's top,
+      // and fit it into the band between the top bar and the logo.
+      const barBottom = barRef.current?.getBoundingClientRect().bottom ?? origin.top
+      const bandTop = barBottom + GUTTER
+      const bandBottom = box.top - GUTTER
       const bottom = Math.round(origin.bottom - box.top + GUTTER)
-      const maxHeight = Math.max(0, Math.round(box.top - origin.top - GUTTER))
+      const maxHeight = Math.max(0, Math.round(bandBottom - bandTop))
+
+      // Widest the art can be without reaching a label that shares its band. The art is
+      // centred on the layer, so the tighter side sets a symmetric cap.
+      const centre = origin.left + origin.width / 2
+      let leftLimit = -Infinity
+      let rightLimit = Infinity
+      labels.forEach((l) => {
+        const dx = next[l.i]
+        if (l.bottom <= bandTop || l.top >= bandBottom) return
+        if ((l.left + l.right) / 2 < centre) leftLimit = Math.max(leftLimit, l.right + dx)
+        else rightLimit = Math.min(rightLimit, l.left + dx)
+      })
+      const half = Math.min(centre - leftLimit, rightLimit - centre) - GUTTER
+      const maxWidth = Number.isFinite(half) ? Math.max(0, Math.round(half * 2)) : null
+
       setGhostBox((prev) =>
-        prev && prev.bottom === bottom && prev.maxHeight === maxHeight ? prev : { bottom, maxHeight },
+        prev && prev.bottom === bottom && prev.maxHeight === maxHeight && prev.maxWidth === maxWidth
+          ? prev
+          : { bottom, maxHeight, maxWidth },
       )
     }
 
@@ -361,7 +402,10 @@ export function NinaroHome() {
         </svg>
 
         {/* Top bar */}
-        <div className="absolute left-0 right-0 top-0 z-30 flex items-start justify-between px-[34px] py-[30px]">
+        <div
+          ref={barRef}
+          className="absolute left-0 right-0 top-0 z-30 flex items-start justify-between px-[34px] py-[30px]"
+        >
           <button
             type="button"
             onClick={toggleMenu}
@@ -485,10 +529,14 @@ export function NinaroHome() {
             aria-hidden="true"
             className="absolute left-1/2 pointer-events-none"
             style={{
-              width: 'min(46vh, 52vw)',
-              height: 'min(46vh, 52vw)',
+              width: 'min(34vh, 38vw)',
+              height: 'min(34vh, 38vw)',
               ...(ghostBox
-                ? { bottom: ghostBox.bottom, maxHeight: ghostBox.maxHeight }
+                ? {
+                    bottom: ghostBox.bottom,
+                    maxHeight: ghostBox.maxHeight,
+                    ...(ghostBox.maxWidth !== null ? { maxWidth: ghostBox.maxWidth } : null),
+                  }
                 : { top: '50%' }),
               transform: ghostBox
                 ? `translateX(-50%) scale(${hover !== null ? 1 : 0.94})`
