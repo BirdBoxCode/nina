@@ -48,6 +48,9 @@ const GHOST_FILTER: React.CSSProperties = {
   mixBlendMode: 'multiply',
 }
 
+/* marking-2 ships as black line art, unlike the rest of the set; it only needs the multiply. */
+const DARK_GHOSTS = new Set<string>([ART.marking2])
+
 const CATS = [
   { label: 'MURALS', href: '/walls', left: '13%', top: '20%', rot: -3.5, ghost: ART.bull },
   { label: 'PAINTINGS', href: '/paintings', left: '23%', top: '34%', rot: 2.5, ghost: ART.marking },
@@ -55,7 +58,7 @@ const CATS = [
   { label: 'INSTALLATIONS', href: '/installations', left: '24%', top: '66%', rot: 4, ghost: ART.shell },
   { label: 'STAGE DESIGN', href: '/stage-design', left: '68%', top: '21%', rot: 3.5, ghost: ART.marking2 },
   { label: 'WORKSHOPS', href: '/workshops', left: '73%', top: '36%', rot: -2.5, ghost: ART.sword },
-  { label: 'ABOUT', href: '/bio-contact', left: '71%', top: '53%', rot: 1.5, ghost: ART.marking },
+  { label: 'ABOUT', href: '/bio-contact', left: '76%', top: '53%', rot: 1.5, ghost: ART.marking },
   { label: 'SHOP', href: '/shop', left: '75%', top: '68%', rot: -4, ghost: ART.shell },
   { label: 'TATTOOS ↗', href: 'https://lineacruda.com', left: '45%', top: '78%', rot: 1, ghost: ART.sword },
 ] as const
@@ -182,6 +185,8 @@ export function NinaroHome() {
   // Which illustration is painted, held apart from whether it is visible: on mouse-out
   // `hover` clears immediately, so reading the src off it would swap the image mid-fade.
   const [ghostSrc, setGhostSrc] = useState<string>(ART.marking)
+  // Derived, not stored: ghostSrc outlives `hover` through the fade, and so must the polarity.
+  const ghostDark = DARK_GHOSTS.has(ghostSrc)
   const [near, setNear] = useState(false)
   const [narrow, setNarrow] = useState(false)
   const [nudge, setNudge] = useState<readonly number[]>(() => CATS.map(() => 0))
@@ -548,7 +553,7 @@ export function NinaroHome() {
               backgroundSize: 'contain',
               opacity: menuOpen && hover !== null ? 0.3 : 0,
               transition: `opacity .8s ease, transform 1.2s ${EASE}`,
-              ...GHOST_FILTER,
+              ...(ghostDark ? { mixBlendMode: 'multiply' as const } : GHOST_FILTER),
             }}
           />
 
