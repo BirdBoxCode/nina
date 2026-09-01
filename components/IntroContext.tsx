@@ -52,9 +52,11 @@ export function MainContent({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
+        // No transition: content appears the moment it is released rather than fading in.
+        // The visibility gate itself stays — it is the intro overlay's handoff, not an
+        // animation, and without it page content would show through the overlay.
         opacity: contentVisible ? 1 : 0,
         pointerEvents: contentVisible ? 'auto' : 'none',
-        transition: 'opacity 0.25s ease',
       }}
     >
       {children}

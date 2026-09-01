@@ -97,18 +97,23 @@ const BREATHERS: {
  * `span` carries only the >=900px design spans; below that cards stack 1-up then 2-up.
  */
 const WORKS = [
-  { title: 'UROBORO', cat: 'Murals', href: '/walls', span: 'min-[900px]:col-span-7', ratio: '4 / 3', mt: undefined, delay: 0 },
-  { title: 'NOTTE CHIARA', cat: 'Paintings', href: '/paintings', span: 'min-[900px]:col-span-5', ratio: '3 / 4', mt: 'clamp(0px, 6vw, 92px)', delay: 80 },
-  { title: 'DRAGO', cat: 'Illustration', href: '/illustration', span: 'min-[900px]:col-span-4', ratio: '1 / 1', mt: undefined, delay: 0 },
-  { title: 'SOGLIA', cat: 'Installations', href: '/installations', span: 'min-[900px]:col-span-8', ratio: '16 / 9', mt: 'clamp(0px, 4vw, 58px)', delay: 80 },
-  { title: 'SCENA VIVA', cat: 'Stage design', href: '/stage-design', span: 'min-[900px]:col-start-2 min-[900px]:col-span-5', ratio: '5 / 4', mt: 'clamp(0px, 3vw, 40px)', delay: 0 },
-  { title: 'DO YOUR OWN', cat: 'Workshops', href: '/workshops', span: 'min-[900px]:col-span-4', ratio: '3 / 4', mt: 'clamp(0px, 9vw, 150px)', delay: 80 },
+  { title: 'Uroboro', cat: 'Murals', href: '/walls', span: 'min-[900px]:col-span-7', ratio: '4 / 3', mt: undefined, delay: 0 },
+  { title: 'Notte Chiara', cat: 'Paintings', href: '/paintings', span: 'min-[900px]:col-span-5', ratio: '3 / 4', mt: 'clamp(0px, 6vw, 92px)', delay: 80 },
+  { title: 'Drago', cat: 'Illustration', href: '/illustration', span: 'min-[900px]:col-span-4', ratio: '1 / 1', mt: undefined, delay: 0 },
+  { title: 'Soglia', cat: 'Installations', href: '/installations', span: 'min-[900px]:col-span-8', ratio: '16 / 9', mt: 'clamp(0px, 4vw, 58px)', delay: 80 },
+  { title: 'Scena Viva', cat: 'Stage design', href: '/stage-design', span: 'min-[900px]:col-start-2 min-[900px]:col-span-5', ratio: '5 / 4', mt: 'clamp(0px, 3vw, 40px)', delay: 0 },
+  { title: 'Do Your Own', cat: 'Workshops', href: '/workshops', span: 'min-[900px]:col-span-4', ratio: '3 / 4', mt: 'clamp(0px, 9vw, 150px)', delay: 80 },
 ]
 
+/**
+ * Nav labels: the top bar pair and the footer links, its only users. Script face, so
+ * no uppercase and light tracking — the wide .26em here was tuned for small caps.
+ * Sized up from 10.5px because Dancing Script's x-height reads smaller than Inter's.
+ */
 const MICRO: React.CSSProperties = {
-  fontSize: '10.5px',
-  letterSpacing: '.26em',
-  textTransform: 'uppercase',
+  fontFamily: 'var(--font-dancing-script)',
+  fontSize: '18px',
+  letterSpacing: '.06em',
 }
 
 /**
@@ -473,7 +478,7 @@ export function NinaroHome() {
               <Image src={ART.icon2} alt="" width={18} height={18} className="w-[18px] h-[18px] ml-1" />
               <Image src={ART.icon3} alt="" width={18} height={18} className="w-[18px] h-[18px]" />
             </span>
-            <span style={{ ...MICRO, fontSize: '12px', color: MUTED }}>{menuOpen ? 'CLOSE' : 'MENU'}</span>
+            <span style={{ ...MICRO, fontSize: '24px', color: MUTED }}>{menuOpen ? 'Close' : 'Menu'}</span>
           </button>
 
           <a
@@ -483,7 +488,7 @@ export function NinaroHome() {
             className="flex items-center gap-3 p-1.5"
             style={{ animation: 'nr-fadeup 1s ease .35s both' }}
           >
-            <span style={{ ...MICRO, fontSize: '12px', color: MUTED }}>TATTOO</span>
+            <span style={{ ...MICRO, fontSize: '24px', color: MUTED }}>Tattoo</span>
             <Image src={ART.icon2} alt="" width={26} height={26} className="w-[26px] h-[26px]" aria-hidden="true" />
           </a>
         </div>
@@ -524,14 +529,14 @@ export function NinaroHome() {
             />
             <span
               style={{
-                fontSize: '12px',
-                letterSpacing: '.22em',
-                textTransform: 'uppercase',
+                fontFamily: 'var(--font-dancing-script)',
+                fontSize: '17px',
+                letterSpacing: '.08em',
                 color: MUTED,
                 writingMode: 'vertical-rl',
               }}
             >
-              PLAY
+              Play
             </span>
           </a>
 
@@ -597,8 +602,8 @@ export function NinaroHome() {
                 className="h-px w-[46px]"
                 style={{ background: `linear-gradient(to right, transparent, ${RULE})` }}
               />
-              <span style={{ fontSize: '10.5px', letterSpacing: '.34em', textTransform: 'uppercase', color: MUTED }}>
-                ARTIST : TATTOOIST
+              <span style={{ fontFamily: 'var(--font-dancing-script)', fontSize: '17px', letterSpacing: '.08em', color: MUTED }}>
+                Artist : Tattooist
               </span>
               <span
                 className="h-px w-[46px]"
@@ -706,8 +711,8 @@ export function NinaroHome() {
             transition: 'opacity .5s ease',
           }}
         >
-          <span style={{ fontSize: '9.5px', letterSpacing: '.3em', textTransform: 'uppercase', color: MUTED_LIGHT }}>
-            SCROLL
+          <span style={{ fontFamily: 'var(--font-dancing-script)', fontSize: '16px', letterSpacing: '.08em', color: MUTED_LIGHT }}>
+            Scroll
           </span>
           <span
             className="w-px h-[34px]"
@@ -732,7 +737,13 @@ export function NinaroHome() {
         >
           <h2
             className="m-0"
-            style={{ fontSize: 'clamp(20px, 2.2vw, 30px)', fontWeight: 400, letterSpacing: '.04em', color: INK }}
+            style={{
+              fontFamily: 'var(--font-dancing-script)',
+              fontSize: 'clamp(32px, 3.4vw, 46px)',
+              fontWeight: 400,
+              letterSpacing: '.04em',
+              color: INK,
+            }}
           >
             Selected work
           </h2>
@@ -766,7 +777,11 @@ export function NinaroHome() {
                 <div className="flex items-baseline justify-between gap-4 pt-[13px]">
                   <span
                     className="transition-colors duration-300 group-hover:text-[#5d5294]"
-                    style={{ fontSize: '13.5px', letterSpacing: '.13em', textTransform: 'uppercase' }}
+                    style={{
+                      fontFamily: 'var(--font-dancing-script)',
+                      fontSize: '28px',
+                      letterSpacing: '.05em',
+                    }}
                   >
                     {w.title}
                   </span>
@@ -799,10 +814,10 @@ export function NinaroHome() {
           />
           <div className="flex gap-7">
             <TransitionLink href="/bio-contact" className="hover:text-[#5d5294]" style={MICRO}>
-              ABOUT
+              About
             </TransitionLink>
             <TransitionLink href="/shop" className="hover:text-[#5d5294]" style={MICRO}>
-              SHOP
+              Shop
             </TransitionLink>
             <a
               href="https://lineacruda.com"
@@ -811,7 +826,7 @@ export function NinaroHome() {
               className="hover:text-[#5d5294]"
               style={MICRO}
             >
-              TATTOOS ↗
+              Tattoos ↗
             </a>
           </div>
         </div>

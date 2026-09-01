@@ -3,7 +3,6 @@ import { Inter, Cinzel, Space_Mono, Dancing_Script, Piazzolla } from "next/font/
 import "./globals.css";
 import { clsx } from "clsx";
 import { CustomCursor } from "@/components/CustomCursor";
-import { FluidBackground } from "@/components/FluidBackground";
 import { IntroProvider, MainContent } from "@/components/IntroContext";
 import { IntroOverlay } from "@/components/IntroOverlay";
 import { PageTransitionProvider } from "@/components/PageTransition";
@@ -57,7 +56,6 @@ export default function RootLayout({
           "font-sans min-h-screen flex flex-col bg-neutral-950 text-neutral-50 antialiased selection:bg-neutral-700 selection:text-white"
         )}
       >
-        <FluidBackground />
         <IntroProvider>
           <CustomCursor />
           <IntroOverlay />
