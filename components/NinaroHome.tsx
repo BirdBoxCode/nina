@@ -84,9 +84,11 @@ const BREATHERS: {
   opacity: number
   anim: string
 }[] = [
-  { src: ART.marking, w: 376, h: 1200, pos: { left: '-3%', top: '4%' }, width: '15vw', opacity: 0.16, anim: 'nr-breathe 17s ease-in-out infinite' },
-  { src: ART.sword, w: 494, h: 1200, pos: { right: '-2%', bottom: '-4%' }, width: '12vw', opacity: 0.14, anim: 'nr-breathe 21s ease-in-out infinite reverse' },
-  { src: ART.shell, w: 1200, h: 769, pos: { left: '8%', bottom: '6%' }, width: '17vw', opacity: 0.13, anim: 'nr-breathe 25s ease-in-out infinite' },
+  // The px floors only engage below ~730px, where a bare vw would shrink these to
+  // 50-60px and lose them entirely; desktop always takes the vw value unchanged.
+  { src: ART.marking, w: 376, h: 1200, pos: { left: '-3%', top: '4%' }, width: 'max(100px, 15vw)', opacity: 0.16, anim: 'nr-breathe 17s ease-in-out infinite' },
+  { src: ART.sword, w: 494, h: 1200, pos: { right: '-2%', bottom: '-4%' }, width: 'max(80px, 12vw)', opacity: 0.14, anim: 'nr-breathe 21s ease-in-out infinite reverse' },
+  { src: ART.shell, w: 1200, h: 769, pos: { left: '8%', bottom: '6%' }, width: 'max(115px, 17vw)', opacity: 0.13, anim: 'nr-breathe 25s ease-in-out infinite' },
 ]
 
 /**
@@ -433,7 +435,11 @@ export function NinaroHome() {
               d={l.d}
               fill="none"
               stroke={ACCENT_LINE}
-              strokeWidth={l.w}
+              // Stroke width is in viewBox units, so it shrinks with the box: the same
+              // 1.1 that renders ~0.86px on desktop falls to ~0.41px on a phone and
+              // anti-aliases away. 2.2x restores the desktop weight. Not vector-effect:
+              // that reinterprets stroke-dasharray and would retime the nr-draw reveal.
+              strokeWidth={narrow ? l.w * 2.2 : l.w}
               strokeLinecap="round"
               opacity={l.o}
               className="nr-line"
@@ -449,7 +455,10 @@ export function NinaroHome() {
         {/* Top bar */}
         <div
           ref={barRef}
-          className="absolute left-0 right-0 top-0 z-30 flex items-start justify-between px-[34px] py-[30px]"
+          // items-center, not items-start: the button's 64px icon column sets the bar
+          // height, so centring both sides lands MENU and TATTOO on one line while the
+          // label keeps its designed position beside the middle icon.
+          className="absolute left-0 right-0 top-0 z-30 flex items-center justify-between px-[34px] py-[30px]"
         >
           <button
             type="button"
@@ -644,7 +653,9 @@ export function NinaroHome() {
             const style: React.CSSProperties = {
               position: 'absolute',
               left: narrow ? '50%' : c.left,
-              top: narrow ? `${16 + i * 8.5}%` : c.top,
+              // Stacked: a 6% step tightens the column, and the 26% start keeps the
+              // 9-item span (48%) centred in the hero.
+              top: narrow ? `${26 + i * 6}%` : c.top,
               fontFamily: 'var(--font-dancing-script)',
               fontSize: 'clamp(19px, 1.9vw, 29px)',
               // Open enough to breathe while the script still joins; the hover widening
