@@ -7,7 +7,7 @@ All instructions here must be followed strictly.\
 ## Project\
 
 \
-Always use Antigravity to edit code.
+Always use VS Code to edit code.
 Always run npm run test after all edits are finished.
 Nina \
 Tech stack: Next.js (App Router) + Tailwind CSS\

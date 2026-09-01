@@ -3,7 +3,12 @@
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
-import { TransitionLink } from '@/components/PageTransition'
+import { useState } from 'react'
+import {
+  TransitionLink,
+  useTransitionCovered,
+  REVEAL_CLEAR_DELAY,
+} from '@/components/PageTransition'
 import { CATEGORY_META, type Artwork } from '@/lib/artworks'
 
 // Near-opaque veil over the global fluid canvas — lets a trace of drift through.
@@ -28,6 +33,10 @@ export function ArtworkDetail({
 }) {
   const backHref = CATEGORY_HREF[piece.category]
 
+  // Matches ArtGallery: hold the entrance until the wipe panel has cleared.
+  const covered = useTransitionCovered()
+  const [baseDelay] = useState(() => (covered ? REVEAL_CLEAR_DELAY : 0))
+
   return (
     // `relative z-10 isolate` lifts the page above the fixed z-0 fluid canvas.
     <div
@@ -38,7 +47,7 @@ export function ArtworkDetail({
       <motion.div
         initial={{ opacity: 0, scale: 1.04 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: baseDelay }}
         className="relative h-[55vh] w-full overflow-hidden md:h-screen md:w-1/2"
         style={{ backgroundColor: piece.tint }}
       >
@@ -48,7 +57,7 @@ export function ArtworkDetail({
           fill
           priority
           sizes="(max-width: 768px) 100vw, 50vw"
-          className={piece.fit === 'cover' ? 'object-cover' : 'object-contain p-12'}
+          className={piece.fit === 'cover' ? 'object-cover' : 'object-contain p-6 md:p-12'}
         />
       </motion.div>
 
@@ -70,7 +79,7 @@ export function ArtworkDetail({
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: baseDelay + 0.25 }}
           className="flex flex-1 flex-col items-center justify-center px-10 py-16 text-center md:py-0"
         >
           <h1
