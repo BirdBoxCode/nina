@@ -179,9 +179,14 @@ function useReveal() {
 export function NinaroHome() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [hover, setHover] = useState<number | null>(null)
+  // Which illustration is painted, held apart from whether it is visible: on mouse-out
+  // `hover` clears immediately, so reading the src off it would swap the image mid-fade.
+  const [ghostSrc, setGhostSrc] = useState<string>(ART.marking)
   const [near, setNear] = useState(false)
   const [narrow, setNarrow] = useState(false)
   const [nudge, setNudge] = useState<readonly number[]>(() => CATS.map(() => 0))
+  // Where the hover ghost sits: bottom-anchored just above the logo, capped to the room there.
+  const [ghostBox, setGhostBox] = useState<{ bottom: number; maxHeight: number } | null>(null)
   const logoRef = useRef<HTMLDivElement | null>(null)
   const layerRef = useRef<HTMLDivElement | null>(null)
   const { register, revealStyle } = useReveal()
@@ -229,6 +234,7 @@ export function NinaroHome() {
       const layer = layerRef.current
       if (narrow || !logo || !layer) {
         setNudge((prev) => (prev.some((d) => d !== 0) ? CATS.map(() => 0) : prev))
+        setGhostBox(null)
         return
       }
 
@@ -257,6 +263,13 @@ export function NinaroHome() {
       })
 
       setNudge((prev) => (prev.every((d, i) => d === next[i]) ? prev : next))
+
+      // Clear the logo vertically as well: pin the art's bottom edge above the logo's top.
+      const bottom = Math.round(origin.bottom - box.top + GUTTER)
+      const maxHeight = Math.max(0, Math.round(box.top - origin.top - GUTTER))
+      setGhostBox((prev) =>
+        prev && prev.bottom === bottom && prev.maxHeight === maxHeight ? prev : { bottom, maxHeight },
+      )
     }
 
     let frame = 0
@@ -320,7 +333,13 @@ export function NinaroHome() {
           viewBox="0 0 900 900"
           aria-hidden="true"
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 overflow-visible pointer-events-none"
-          style={{ width: 'min(78vh, 86vw)', height: 'min(78vh, 86vw)' }}
+          style={{
+            width: 'min(78vh, 86vw)',
+            height: 'min(78vh, 86vw)',
+            // Recede while the menu is open so the hover art reads clearly over the lines.
+            opacity: menuOpen ? 0.45 : 1,
+            transition: 'opacity .7s ease',
+          }}
         >
           {LINES.map((l, i) => (
             <path
@@ -352,11 +371,11 @@ export function NinaroHome() {
             style={{ animation: 'nr-fadeup 1s ease .2s both' }}
           >
             <span className="flex flex-col gap-[5px]" aria-hidden="true">
-              <Image src={ART.icon1} alt="" width={15} height={15} className="w-[15px] h-[15px]" />
-              <Image src={ART.icon2} alt="" width={15} height={15} className="w-[15px] h-[15px] ml-1" />
-              <Image src={ART.icon3} alt="" width={15} height={15} className="w-[15px] h-[15px]" />
+              <Image src={ART.icon1} alt="" width={18} height={18} className="w-[18px] h-[18px]" />
+              <Image src={ART.icon2} alt="" width={18} height={18} className="w-[18px] h-[18px] ml-1" />
+              <Image src={ART.icon3} alt="" width={18} height={18} className="w-[18px] h-[18px]" />
             </span>
-            <span style={{ ...MICRO, color: MUTED }}>{menuOpen ? 'CLOSE' : 'MENU'}</span>
+            <span style={{ ...MICRO, fontSize: '12px', color: MUTED }}>{menuOpen ? 'CLOSE' : 'MENU'}</span>
           </button>
 
           <a
@@ -366,8 +385,8 @@ export function NinaroHome() {
             className="flex items-center gap-3 p-1.5"
             style={{ animation: 'nr-fadeup 1s ease .35s both' }}
           >
-            <span style={{ ...MICRO, color: MUTED }}>TATTOO</span>
-            <Image src={ART.icon2} alt="" width={22} height={22} className="w-[22px] h-[22px]" aria-hidden="true" />
+            <span style={{ ...MICRO, fontSize: '12px', color: MUTED }}>TATTOO</span>
+            <Image src={ART.icon2} alt="" width={26} height={26} className="w-[26px] h-[26px]" aria-hidden="true" />
           </a>
         </div>
 
@@ -464,14 +483,20 @@ export function NinaroHome() {
           {/* Hover ghost — a background image, so no request fires for an unresolved value */}
           <div
             aria-hidden="true"
-            className="absolute left-1/2 top-1/2 pointer-events-none"
+            className="absolute left-1/2 pointer-events-none"
             style={{
               width: 'min(46vh, 52vw)',
               height: 'min(46vh, 52vw)',
-              transform: `translate(-50%,-50%) scale(${hover !== null ? 1 : 0.94})`,
-              backgroundImage: `url(${hover !== null ? CATS[hover].ghost : ART.marking})`,
+              ...(ghostBox
+                ? { bottom: ghostBox.bottom, maxHeight: ghostBox.maxHeight }
+                : { top: '50%' }),
+              transform: ghostBox
+                ? `translateX(-50%) scale(${hover !== null ? 1 : 0.94})`
+                : `translate(-50%,-50%) scale(${hover !== null ? 1 : 0.94})`,
+              transformOrigin: ghostBox ? 'center bottom' : 'center',
+              backgroundImage: `url(${ghostSrc})`,
               backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center',
+              backgroundPosition: ghostBox ? 'center bottom' : 'center',
               backgroundSize: 'contain',
               opacity: menuOpen && hover !== null ? 0.3 : 0,
               transition: `opacity .8s ease, transform 1.2s ${EASE}`,
@@ -505,7 +530,10 @@ export function NinaroHome() {
               'data-nr-item': i,
               tabIndex: menuOpen ? 0 : -1,
               'aria-hidden': !menuOpen,
-              onMouseEnter: () => setHover(i),
+              onMouseEnter: () => {
+                setHover(i)
+                setGhostSrc(c.ghost)
+              },
               onMouseLeave: () => setHover(null),
             }
 
