@@ -694,7 +694,14 @@ export function NinaroHome() {
             ...revealStyle(WORKS.length + 1, 1.1, 22),
           }}
         >
-          <span style={{ ...MICRO, color: MUTED_LIGHT }}>NINARÒ — MILANO</span>
+          <Image
+            src={ART.ninaro}
+            alt="NINARÒ"
+            width={1088}
+            height={350}
+            className="block h-auto"
+            style={{ width: 'clamp(78px, 8vw, 104px)' }}
+          />
           <div className="flex gap-7">
             <TransitionLink href="/bio-contact" className="hover:text-[#5d5294]" style={MICRO}>
               ABOUT
