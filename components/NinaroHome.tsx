@@ -55,15 +55,15 @@ const GHOST_FILTER: React.CSSProperties = {
 const DARK_GHOSTS = new Set<string>([ART.marking2])
 
 const CATS = [
-  { label: 'MURALS', href: '/walls', left: '13%', top: '20%', rot: -3.5, ghost: ART.bull },
-  { label: 'PAINTINGS', href: '/paintings', left: '23%', top: '34%', rot: 2.5, ghost: ART.marking },
-  { label: 'ILLUSTRATIONS', href: '/illustration', left: '11%', top: '50%', rot: -1.5, ghost: ART.dragon },
-  { label: 'INSTALLATIONS', href: '/installations', left: '24%', top: '66%', rot: 4, ghost: ART.shell },
-  { label: 'STAGE DESIGN', href: '/stage-design', left: '68%', top: '21%', rot: 3.5, ghost: ART.marking2 },
-  { label: 'WORKSHOPS', href: '/workshops', left: '73%', top: '36%', rot: -2.5, ghost: ART.sword },
-  { label: 'ABOUT', href: '/bio-contact', left: '76%', top: '53%', rot: 1.5, ghost: ART.marking },
-  { label: 'SHOP', href: '/shop', left: '75%', top: '68%', rot: -4, ghost: ART.shell },
-  { label: 'TATTOOS ↗', href: 'https://lineacruda.com', left: '45%', top: '78%', rot: 1, ghost: ART.sword },
+  { label: 'Murals', href: '/walls', left: '13%', top: '20%', rot: -3.5, ghost: ART.bull },
+  { label: 'Paintings', href: '/paintings', left: '23%', top: '34%', rot: 2.5, ghost: ART.marking },
+  { label: 'Illustrations', href: '/illustration', left: '11%', top: '50%', rot: -1.5, ghost: ART.dragon },
+  { label: 'Installations', href: '/installations', left: '24%', top: '66%', rot: 4, ghost: ART.shell },
+  { label: 'Stage Design', href: '/stage-design', left: '75%', top: '21%', rot: 3.5, ghost: ART.marking2 },
+  { label: 'Workshops', href: '/workshops', left: '80%', top: '36%', rot: -2.5, ghost: ART.sword },
+  { label: 'About', href: '/bio-contact', left: '83%', top: '53%', rot: 1.5, ghost: ART.marking },
+  { label: 'Shop', href: '/shop', left: '82%', top: '68%', rot: -4, ghost: ART.shell },
+  { label: 'Tattoos ↗', href: 'https://lineacruda.com', left: '45%', top: '78%', rot: 1, ghost: ART.sword },
 ] as const
 
 /** The four self-drawing hero lines. Dash length doubles as the starting dashoffset. */
@@ -645,10 +645,12 @@ export function NinaroHome() {
               position: 'absolute',
               left: narrow ? '50%' : c.left,
               top: narrow ? `${16 + i * 8.5}%` : c.top,
-              fontSize: 'clamp(15px, 1.5vw, 23px)',
-              letterSpacing: hover === i ? '.18em' : '.14em',
-              textTransform: 'uppercase',
-              fontWeight: 300,
+              fontFamily: 'var(--font-dancing-script)',
+              fontSize: 'clamp(19px, 1.9vw, 29px)',
+              // Open enough to breathe while the script still joins; the hover widening
+              // is the original gesture rescaled to this baseline, not a new one.
+              letterSpacing: hover === i ? '.11em' : '.07em',
+              fontWeight: 400,
               whiteSpace: 'nowrap',
               color: hover === i ? ACCENT : hover === null ? INK : DIMMED,
               transform:
