@@ -4,7 +4,6 @@ import "./globals.css";
 import { clsx } from "clsx";
 import { CustomCursor } from "@/components/CustomCursor";
 import { IntroProvider, MainContent } from "@/components/IntroContext";
-import { IntroOverlay } from "@/components/IntroOverlay";
 import { PageTransitionProvider } from "@/components/PageTransition";
 
 const inter = Inter({
@@ -58,7 +57,6 @@ export default function RootLayout({
       >
         <IntroProvider>
           <CustomCursor />
-          <IntroOverlay />
           <PageTransitionProvider>
             <MainContent>
               {children}

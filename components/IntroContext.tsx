@@ -1,7 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import React, { createContext, useContext, useState, useCallback } from 'react'
 
 interface IntroContextType {
   contentVisible: boolean
@@ -18,17 +17,10 @@ const IntroContext = createContext<IntroContextType>({
 })
 
 export function IntroProvider({ children }: { children: React.ReactNode }) {
-  // The NINARÒ home page carries its own entrance animation, so the intro is skipped there
-  // and its content must not be gated behind the overlay's cross-fade.
-  const skipIntro = usePathname() === '/'
-  const [contentVisible, setContentVisible] = useState(skipIntro)
+  // The intro overlay no longer renders, so page content is never gated — every
+  // route, home and subpages alike, carries its own entrance animation.
+  const [contentVisible, setContentVisible] = useState(true)
   const [cursorOverride, setCursorOverrideState] = useState<{ x: number; y: number } | null>(null)
-
-  useEffect(() => {
-    if (skipIntro || sessionStorage.getItem('introPlayed')) {
-      setContentVisible(true)
-    }
-  }, [skipIntro])
 
   const setCursorOverride = useCallback((pos: { x: number; y: number } | null) => {
     setCursorOverrideState(pos)
@@ -52,9 +44,6 @@ export function MainContent({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        // No transition: content appears the moment it is released rather than fading in.
-        // The visibility gate itself stays — it is the intro overlay's handoff, not an
-        // animation, and without it page content would show through the overlay.
         opacity: contentVisible ? 1 : 0,
         pointerEvents: contentVisible ? 'auto' : 'none',
       }}
