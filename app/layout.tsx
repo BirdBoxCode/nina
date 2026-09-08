@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Cinzel, Space_Mono, Dancing_Script, Piazzolla } from "next/font/google";
+import { Inter, Cinzel, Space_Mono, Caveat, Piazzolla } from "next/font/google";
 import "./globals.css";
 import { clsx } from "clsx";
 import { CustomCursor } from "@/components/CustomCursor";
@@ -22,8 +22,8 @@ const spaceMono = Space_Mono({
   subsets: ["latin"],
 });
 
-const dancingScript = Dancing_Script({
-  variable: "--font-dancing-script",
+const caveat = Caveat({
+  variable: "--font-hand",
   subsets: ["latin"],
 });
 
@@ -50,7 +50,7 @@ export default function RootLayout({
           inter.variable,
           cinzel.variable,
           spaceMono.variable,
-          dancingScript.variable,
+          caveat.variable,
           piazzolla.variable,
           "font-sans min-h-screen flex flex-col bg-neutral-950 text-neutral-50 antialiased selection:bg-neutral-700 selection:text-white"
         )}

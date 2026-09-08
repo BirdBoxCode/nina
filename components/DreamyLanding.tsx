@@ -124,7 +124,6 @@ const NAV_ITEMS = [
   { label: 'about me', href: '/bio-contact' },
   { label: 'shop', href: '/shop' },
   { label: 'contact', href: '/contact' },
-  { label: 'tattoos', href: '/?v=tattoo' },
   { label: 'do your own', href: '/workshops' },
 ]
 
@@ -284,7 +283,7 @@ export function DreamyLanding() {
               initial={{ opacity: 0, y: 20 }}
               animate={contentVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
               transition={{ y: { duration: 0.35, ease: 'easeOut', delay: 0.18 }, opacity: { duration: 0.35, ease: 'easeOut', delay: 0.18 } }}
-              className="mt-[10px] font-[family-name:var(--font-dancing-script)] font-light text-[18px] tracking-[0.25em] text-neutral-800 uppercase"
+              className="mt-[10px] font-[family-name:var(--font-hand)] font-light text-[18px] tracking-[0.25em] text-neutral-800 uppercase"
             >
               Coming Soon
             </motion.span>
@@ -315,7 +314,7 @@ export function DreamyLanding() {
                 height={85}
                 className="w-[100px] md:w-[130px] h-auto opacity-80 transition-opacity duration-500 group-hover:opacity-100"
               />
-              <span className="font-[family-name:var(--font-dancing-script)] text-[16px] md:text-[18px] tracking-[0.2em] text-neutral-800 uppercase">
+              <span className="font-[family-name:var(--font-hand)] text-[16px] md:text-[18px] tracking-[0.2em] text-neutral-800 uppercase">
                 scroll
               </span>
               <svg
@@ -351,7 +350,7 @@ export function DreamyLanding() {
                 <TransitionLink
                   key={item.href}
                   href={item.href}
-                  className="group relative font-[family-name:var(--font-dancing-script)] text-[26px] md:text-[32px] leading-tight text-[#FBFFFF] transition-colors duration-500 hover:text-[#C0CCFC]"
+                  className="group relative font-[family-name:var(--font-hand)] text-[26px] md:text-[32px] leading-tight text-[#FBFFFF] transition-colors duration-500 hover:text-[#C0CCFC]"
                 >
                   {item.label}
                   <span className="pointer-events-none absolute right-0 -bottom-0.5 h-px w-0 bg-current transition-all duration-500 ease-out group-hover:w-full" />

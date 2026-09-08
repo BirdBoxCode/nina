@@ -7,7 +7,7 @@ import { TransitionLink } from '@/components/PageTransition'
 /* --- Design tokens (Nocturne, run on a light paper ground) --- */
 const PAPER = '#EFEBE2'
 const FRAME = '#E6E1D7'
-const INK = '#23222A'
+const INK = '#3B3321'
 const MUTED = '#595d6c'
 const MUTED_LIGHT = '#75798c'
 const DIMMED = '#a9a59b'
@@ -15,7 +15,6 @@ const RULE = '#b2b6ca'
 const RULE_LIGHT = '#cfd3e5'
 const BORDER = '#dcd8ce'
 const ACCENT = '#5d5294'
-const ACCENT_LINE = '#796cbf'
 
 /* --- Assets. Paths confirmed against /public by checksum against the handoff set. --- */
 const ART = {
@@ -33,7 +32,6 @@ const ART = {
 }
 
 const EASE = 'cubic-bezier(.2,.7,.2,1)'
-const DRAW_EASE = 'cubic-bezier(.22,.7,.2,1)'
 const MENU_STAGGER = 70
 
 /* How far the logo tilts, in degrees, with the cursor at the far edge of the viewport. */
@@ -55,41 +53,15 @@ const GHOST_FILTER: React.CSSProperties = {
 const DARK_GHOSTS = new Set<string>([ART.marking2])
 
 const CATS = [
-  { label: 'Murals', href: '/walls', left: '13%', top: '20%', rot: -3.5, ghost: ART.bull },
-  { label: 'Paintings', href: '/paintings', left: '23%', top: '34%', rot: 2.5, ghost: ART.marking },
-  { label: 'Illustrations', href: '/illustration', left: '11%', top: '50%', rot: -1.5, ghost: ART.dragon },
-  { label: 'Installations', href: '/installations', left: '24%', top: '66%', rot: 4, ghost: ART.shell },
-  { label: 'Stage Design', href: '/stage-design', left: '75%', top: '21%', rot: 3.5, ghost: ART.marking2 },
-  { label: 'Workshops', href: '/workshops', left: '80%', top: '36%', rot: -2.5, ghost: ART.sword },
-  { label: 'About', href: '/bio-contact', left: '83%', top: '53%', rot: 1.5, ghost: ART.marking },
-  { label: 'Shop', href: '/shop', left: '82%', top: '68%', rot: -4, ghost: ART.shell },
-  { label: 'Tattoos ↗', href: 'https://lineacruda.com', left: '45%', top: '78%', rot: 1, ghost: ART.sword },
+  { label: 'Murals', href: '/walls', left: '25%', top: '21%', rot: 0, ghost: ART.bull },
+  { label: 'Paintings', href: '/paintings', left: '20%', top: '36%', rot: 0, ghost: ART.marking },
+  { label: 'Illustrations', href: '/illustration', left: '17%', top: '53%', rot: 0, ghost: ART.dragon },
+  { label: 'Installations', href: '/installations', left: '18%', top: '68%', rot: 0, ghost: ART.shell },
+  { label: 'Stage Design', href: '/stage-design', left: '75%', top: '21%', rot: 0, ghost: ART.marking2 },
+  { label: 'Workshops', href: '/workshops', left: '80%', top: '36%', rot: 0, ghost: ART.sword },
+  { label: 'About', href: '/bio-contact', left: '83%', top: '53%', rot: 0, ghost: ART.marking },
+  { label: 'Shop', href: '/shop', left: '82%', top: '68%', rot: 0, ghost: ART.shell },
 ] as const
-
-/** The four self-drawing hero lines. Dash length doubles as the starting dashoffset. */
-const LINES = [
-  { d: 'M450 40 C 300 170, 322 300, 408 372 C 500 448, 512 520, 430 600 C 352 676, 372 786, 452 862', w: 1.1, o: 0.5, dash: 2000, dur: '3.4s', delay: '.35s' },
-  { d: 'M120 452 C 250 356, 356 386, 424 452 C 494 520, 610 546, 762 448', w: 1.1, o: 0.38, dash: 1600, dur: '3.4s', delay: '.9s' },
-  { d: 'M228 168 C 340 268, 340 620, 236 736', w: 1, o: 0.22, dash: 1400, dur: '4s', delay: '1.4s' },
-  { d: 'M672 168 C 560 268, 560 620, 664 736', w: 1, o: 0.22, dash: 1400, dur: '4s', delay: '1.4s' },
-]
-
-/** Background line drawings that breathe behind the hero. */
-const BREATHERS: {
-  src: string
-  w: number
-  h: number
-  pos: React.CSSProperties
-  width: string
-  opacity: number
-  anim: string
-}[] = [
-  // The px floors only engage below ~730px, where a bare vw would shrink these to
-  // 50-60px and lose them entirely; desktop always takes the vw value unchanged.
-  { src: ART.marking, w: 376, h: 1200, pos: { left: '-3%', top: '4%' }, width: 'max(100px, 15vw)', opacity: 0.16, anim: 'nr-breathe 17s ease-in-out infinite' },
-  { src: ART.sword, w: 494, h: 1200, pos: { right: '-2%', bottom: '-4%' }, width: 'max(80px, 12vw)', opacity: 0.14, anim: 'nr-breathe 21s ease-in-out infinite reverse' },
-  { src: ART.shell, w: 1200, h: 769, pos: { left: '8%', bottom: '6%' }, width: 'max(115px, 17vw)', opacity: 0.13, anim: 'nr-breathe 25s ease-in-out infinite' },
-]
 
 /**
  * Selected work. Titles are placeholders from the design — swap for real project
@@ -111,7 +83,7 @@ const WORKS = [
  * Sized up from 10.5px because Dancing Script's x-height reads smaller than Inter's.
  */
 const MICRO: React.CSSProperties = {
-  fontFamily: 'var(--font-dancing-script)',
+  fontFamily: 'var(--font-hand)',
   fontSize: '18px',
   letterSpacing: '.06em',
 }
@@ -400,63 +372,6 @@ export function NinaroHome() {
 
       {/* ===== Hero ===== */}
       <section className="relative flex items-center justify-center h-screen min-h-[560px]">
-        {/* Breathing ghost line drawings */}
-        {BREATHERS.map((b, i) => (
-          <Image
-            key={i}
-            src={b.src}
-            alt=""
-            width={b.w}
-            height={b.h}
-            aria-hidden="true"
-            className="absolute pointer-events-none select-none"
-            style={{
-              ...b.pos,
-              width: b.width,
-              height: 'auto',
-              opacity: b.opacity,
-              animation: b.anim,
-              ...GHOST_FILTER,
-            }}
-          />
-        ))}
-
-        {/* Self-drawing line ornament */}
-        <svg
-          viewBox="0 0 900 900"
-          aria-hidden="true"
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 overflow-visible pointer-events-none"
-          style={{
-            width: 'min(78vh, 86vw)',
-            height: 'min(78vh, 86vw)',
-            // Recede while the menu is open so the hover art reads clearly over the lines.
-            opacity: menuOpen ? 0.45 : 1,
-            transition: 'opacity .7s ease',
-          }}
-        >
-          {LINES.map((l, i) => (
-            <path
-              key={i}
-              d={l.d}
-              fill="none"
-              stroke={ACCENT_LINE}
-              // Stroke width is in viewBox units, so it shrinks with the box: the same
-              // 1.1 that renders ~0.86px on desktop falls to ~0.41px on a phone and
-              // anti-aliases away. 2.2x restores the desktop weight. Not vector-effect:
-              // that reinterprets stroke-dasharray and would retime the nr-draw reveal.
-              strokeWidth={narrow ? l.w * 2.2 : l.w}
-              strokeLinecap="round"
-              opacity={l.o}
-              className="nr-line"
-              style={{
-                strokeDasharray: l.dash,
-                strokeDashoffset: l.dash,
-                animation: `nr-draw ${l.dur} ${DRAW_EASE} ${l.delay} forwards`,
-              }}
-            />
-          ))}
-        </svg>
-
         {/* Top bar */}
         <div
           ref={barRef}
@@ -529,7 +444,7 @@ export function NinaroHome() {
             />
             <span
               style={{
-                fontFamily: 'var(--font-dancing-script)',
+                fontFamily: 'var(--font-hand)',
                 fontSize: '17px',
                 letterSpacing: '.08em',
                 color: MUTED,
@@ -558,6 +473,17 @@ export function NinaroHome() {
                 willChange: 'transform',
               }}
             >
+              {/* Opera senza crest — sits inside the tilt plane so it turns with the
+                  wordmark, and is width-matched to it (same clamp as the wordmark). */}
+              <Image
+                src={ART.ornament}
+                alt=""
+                width={1192}
+                height={1328}
+                priority
+                className="block h-auto mx-auto"
+                style={{ width: 'clamp(174px, 24.5vw, 340px)', marginBottom: 'clamp(10px, 1.5vw, 22px)' }}
+              />
               <div className="relative inline-block">
                 <Image
                   src={ART.ninaro}
@@ -566,7 +492,7 @@ export function NinaroHome() {
                   height={350}
                   priority
                   className="block h-auto"
-                  style={{ width: 'clamp(240px, 34vw, 470px)' }}
+                  style={{ width: 'clamp(174px, 24.5vw, 340px)' }}
                 />
                 {/* Sheen. Masked by the wordmark itself, so the light falls on the
                     letterforms rather than in a rectangle around them. */}
@@ -596,19 +522,6 @@ export function NinaroHome() {
                   }}
                 />
               </div>
-            </div>
-            <div className="mt-5 flex items-center justify-center gap-[14px]">
-              <span
-                className="h-px w-[46px]"
-                style={{ background: `linear-gradient(to right, transparent, ${RULE})` }}
-              />
-              <span style={{ fontFamily: 'var(--font-dancing-script)', fontSize: '17px', letterSpacing: '.08em', color: MUTED }}>
-                Artist : Tattooist
-              </span>
-              <span
-                className="h-px w-[46px]"
-                style={{ background: `linear-gradient(to left, transparent, ${RULE})` }}
-              />
             </div>
           </div>
 
@@ -661,7 +574,7 @@ export function NinaroHome() {
               // Stacked: a 6% step tightens the column, and the 26% start keeps the
               // 9-item span (48%) centred in the hero.
               top: narrow ? `${26 + i * 6}%` : c.top,
-              fontFamily: 'var(--font-dancing-script)',
+              fontFamily: 'var(--font-hand)',
               fontSize: 'clamp(19px, 1.9vw, 29px)',
               // Open enough to breathe while the script still joins; the hover widening
               // is the original gesture rescaled to this baseline, not a new one.
@@ -711,7 +624,7 @@ export function NinaroHome() {
             transition: 'opacity .5s ease',
           }}
         >
-          <span style={{ fontFamily: 'var(--font-dancing-script)', fontSize: '16px', letterSpacing: '.08em', color: MUTED_LIGHT }}>
+          <span style={{ fontFamily: 'var(--font-hand)', fontSize: '16px', letterSpacing: '.08em', color: MUTED_LIGHT }}>
             Scroll
           </span>
           <span
@@ -738,7 +651,7 @@ export function NinaroHome() {
           <h2
             className="m-0"
             style={{
-              fontFamily: 'var(--font-dancing-script)',
+              fontFamily: 'var(--font-hand)',
               fontSize: 'clamp(32px, 3.4vw, 46px)',
               fontWeight: 400,
               letterSpacing: '.04em',
@@ -778,7 +691,7 @@ export function NinaroHome() {
                   <span
                     className="transition-colors duration-300 group-hover:text-[#5d5294]"
                     style={{
-                      fontFamily: 'var(--font-dancing-script)',
+                      fontFamily: 'var(--font-hand)',
                       fontSize: '28px',
                       letterSpacing: '.05em',
                     }}
