@@ -30,10 +30,7 @@ export function SubPageLayout({ variant, title, subtitle, children }: SubPageLay
             animate={{ opacity: 1, x: 0 }}
             className="flex items-end gap-4 border-b border-current pb-4"
           >
-            <h1 className={cn(
-              'text-5xl md:text-8xl font-bold tracking-tighter uppercase leading-none',
-              isArt ? 'font-[family-name:var(--font-cinzel)]' : 'font-[family-name:var(--font-space-mono)]'
-            )}>
+            <h1 className="text-5xl md:text-8xl font-display tracking-tighter uppercase leading-none">
               {title}
             </h1>
             {subtitle && (

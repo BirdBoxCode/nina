@@ -320,7 +320,7 @@ export function IntroOverlay() {
             display: 'flex',
             alignItems: 'center',
             gap: '0.5em',
-            fontFamily: 'var(--font-hand)',
+            fontFamily: 'var(--font-sans)',
             fontWeight: 300,
             fontSize: 18,
             color: '#FBFFFF',

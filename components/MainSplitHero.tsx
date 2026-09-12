@@ -79,10 +79,10 @@ export function MainSplitHero() {
         {/* Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white pointer-events-none p-6 text-center">
           <motion.div style={{ x: textX, y: textY }}>
-            <h2 className="text-5xl md:text-7xl lg:text-8xl font-[family-name:var(--font-cinzel)] font-bold tracking-widest drop-shadow-lg">
+            <h2 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold tracking-widest drop-shadow-lg">
               NINARÒ
             </h2>
-            <p className="mt-2 text-sm md:text-base tracking-[0.3em] font-light opacity-80 font-[family-name:var(--font-inter)]">
+            <p className="mt-2 text-sm md:text-base tracking-[0.3em] font-light opacity-80 font-sans">
               FINE ART
             </p>
           </motion.div>
@@ -158,10 +158,10 @@ export function MainSplitHero() {
         {/* Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white pointer-events-none p-6 text-center">
           <motion.div style={{ x: textX, y: textY }}>
-            <h2 className="text-5xl md:text-7xl lg:text-8xl font-[family-name:var(--font-space-mono)] font-bold tracking-tighter mix-blend-screen">
+            <h2 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold tracking-tighter mix-blend-screen">
               LINEACRUDA
             </h2>
-            <p className="mt-2 text-sm md:text-base tracking-[0.2em] font-light opacity-80 font-[family-name:var(--font-inter)] uppercase">
+            <p className="mt-2 text-sm md:text-base tracking-[0.2em] font-light opacity-80 font-sans uppercase">
               Tattoo Practice
             </p>
           </motion.div>

@@ -15,7 +15,7 @@ export default async function BookingPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-24">
           <div className="space-y-12">
             <div className="p-8 border border-white/10 bg-white/5 space-y-6">
-              <h2 className="text-2xl font-bold tracking-tighter uppercase font-[family-name:var(--font-space-mono)]">Process</h2>
+              <h2 className="text-2xl font-bold tracking-tighter uppercase">Process</h2>
               <ul className="space-y-4 text-sm tracking-widest uppercase opacity-60 list-decimal list-inside">
                 <li>Submit the inquiry form with your idea</li>
                 <li>Wait for a response (usually 1-2 weeks)</li>
@@ -25,7 +25,7 @@ export default async function BookingPage() {
             </div>
             
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold tracking-tighter uppercase font-[family-name:var(--font-space-mono)]">Status</h2>
+              <h2 className="text-2xl font-bold tracking-tighter uppercase">Status</h2>
               <div className="flex items-center gap-4">
                 <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
                 <span className="text-sm tracking-[0.3em] uppercase">Books Closed — Waitlist Open</span>

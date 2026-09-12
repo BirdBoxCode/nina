@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Adobe Typekit: Neutronic Rounded (400/700) + Neutronic Rounded Black (900).
+   Stylesheet is linked from app/layout.tsx. */
+@theme {
+  --font-sans: "neutronic-rounded", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "neutronic-rounded-black", "neutronic-rounded", ui-sans-serif, sans-serif;
+}
+
 :root {
   --Blue-Background: #FBFFFF;
 }
@@ -67,7 +74,7 @@
 
 .nr-home ::selection {
   background: rgba(145, 132, 217, 0.28);
-  color: #23222A;
+  color: #7A7365;
 }
 
 .nr-home *:focus-visible {

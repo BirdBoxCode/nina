@@ -163,7 +163,7 @@ export function ArtGallery({
       <main className="mx-auto max-w-[1280px] px-6 pb-32 pt-10 md:px-10 md:pt-16">
         <div className="mb-12 flex items-baseline gap-4 md:mb-20">
           <h1
-            className="font-[family-name:var(--font-hand)] text-[44px] leading-none md:text-[64px]"
+            className="font-display text-[44px] leading-none md:text-[64px]"
             style={{ color: INK }}
           >
             {meta.label}

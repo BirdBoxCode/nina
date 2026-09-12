@@ -7,10 +7,10 @@ import { TransitionLink } from '@/components/PageTransition'
 /* --- Design tokens (Nocturne, run on a light paper ground) --- */
 const PAPER = '#EFEBE2'
 const FRAME = '#E6E1D7'
-const INK = '#3B3321'
-const MUTED = '#595d6c'
-const MUTED_LIGHT = '#75798c'
-const DIMMED = '#a9a59b'
+const INK = '#7A7365'
+const MUTED = '#7A7365'
+const MUTED_LIGHT = '#8C8678'
+const DIMMED = '#9E988B'
 const RULE = '#b2b6ca'
 const RULE_LIGHT = '#cfd3e5'
 const BORDER = '#dcd8ce'
@@ -78,12 +78,12 @@ const WORKS = [
 ]
 
 /**
- * Nav labels: the top bar pair and the footer links, its only users. Script face, so
- * no uppercase and light tracking — the wide .26em here was tuned for small caps.
- * Sized up from 10.5px because Dancing Script's x-height reads smaller than Inter's.
+ * Nav labels: the top bar pair and the footer links, its only users. Neutronic Rounded
+ * regular — no uppercase and light tracking, the wide .26em here was tuned for small caps.
  */
 const MICRO: React.CSSProperties = {
-  fontFamily: 'var(--font-hand)',
+  fontFamily: 'var(--font-sans)',
+  fontWeight: 400,
   fontSize: '18px',
   letterSpacing: '.06em',
 }
@@ -355,7 +355,7 @@ export function NinaroHome() {
 
   return (
     <div
-      className="nr-home relative min-h-screen overflow-x-hidden font-[family-name:var(--font-inter)] font-normal"
+      className="nr-home relative min-h-screen overflow-x-hidden font-sans font-normal"
       style={{ background: PAPER, color: INK }}
     >
       {/* Grain — page level, above everything but the cursor and page transition */}
@@ -393,7 +393,7 @@ export function NinaroHome() {
               <Image src={ART.icon2} alt="" width={18} height={18} className="w-[18px] h-[18px] ml-1" />
               <Image src={ART.icon3} alt="" width={18} height={18} className="w-[18px] h-[18px]" />
             </span>
-            <span style={{ ...MICRO, fontSize: '24px', color: MUTED }}>{menuOpen ? 'Close' : 'Menu'}</span>
+            <span style={{ ...MICRO, fontSize: '21px', fontWeight: 700, color: MUTED }}>{menuOpen ? 'Close' : 'Menu'}</span>
           </button>
 
           <a
@@ -403,7 +403,7 @@ export function NinaroHome() {
             className="flex items-center gap-3 p-1.5"
             style={{ animation: 'nr-fadeup 1s ease .35s both' }}
           >
-            <span style={{ ...MICRO, fontSize: '24px', color: MUTED }}>Tattoo</span>
+            <span style={{ ...MICRO, fontSize: '21px', fontWeight: 700, color: MUTED }}>Tattoo</span>
             <Image src={ART.icon2} alt="" width={26} height={26} className="w-[26px] h-[26px]" aria-hidden="true" />
           </a>
         </div>
@@ -444,7 +444,8 @@ export function NinaroHome() {
             />
             <span
               style={{
-                fontFamily: 'var(--font-hand)',
+                fontFamily: 'var(--font-sans)',
+                fontWeight: 400,
                 fontSize: '17px',
                 letterSpacing: '.08em',
                 color: MUTED,
@@ -574,7 +575,7 @@ export function NinaroHome() {
               // Stacked: a 6% step tightens the column, and the 26% start keeps the
               // 9-item span (48%) centred in the hero.
               top: narrow ? `${26 + i * 6}%` : c.top,
-              fontFamily: 'var(--font-hand)',
+              fontFamily: 'var(--font-sans)',
               fontSize: 'clamp(19px, 1.9vw, 29px)',
               // Open enough to breathe while the script still joins; the hover widening
               // is the original gesture rescaled to this baseline, not a new one.
@@ -624,7 +625,7 @@ export function NinaroHome() {
             transition: 'opacity .5s ease',
           }}
         >
-          <span style={{ fontFamily: 'var(--font-hand)', fontSize: '16px', letterSpacing: '.08em', color: MUTED_LIGHT }}>
+          <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 400, fontSize: '16px', letterSpacing: '.08em', color: MUTED_LIGHT }}>
             Scroll
           </span>
           <span
@@ -651,9 +652,9 @@ export function NinaroHome() {
           <h2
             className="m-0"
             style={{
-              fontFamily: 'var(--font-hand)',
+              fontFamily: 'var(--font-sans)',
               fontSize: 'clamp(32px, 3.4vw, 46px)',
-              fontWeight: 400,
+              fontWeight: 700,
               letterSpacing: '.04em',
               color: INK,
             }}
@@ -691,7 +692,8 @@ export function NinaroHome() {
                   <span
                     className="transition-colors duration-300 group-hover:text-[#5d5294]"
                     style={{
-                      fontFamily: 'var(--font-hand)',
+                      fontFamily: 'var(--font-sans)',
+                      fontWeight: 700,
                       fontSize: '28px',
                       letterSpacing: '.05em',
                     }}
