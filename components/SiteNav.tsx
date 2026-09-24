@@ -17,7 +17,6 @@ export function SiteNav({ variant = 'main' }: { variant?: SiteVariant }) {
   }, [isMobileMenuOpen])
   const isMain = variant === 'main'
   const isArt = variant === 'art'
-  const isTattoo = variant === 'tattoo'
 
   return (
     <>
@@ -29,11 +28,7 @@ export function SiteNav({ variant = 'main' }: { variant?: SiteVariant }) {
           'bg-black/80 backdrop-blur-md text-white border-b border-white/5'
         )}
       >
-        <div className={cn(
-          "text-xl font-bold tracking-tighter uppercase",
-          isArt ? "font-[family-name:var(--font-cinzel)]" : 
-          isTattoo ? "font-[family-name:var(--font-space-mono)]" : ""
-        )}>
+        <div className="text-xl font-bold tracking-tighter uppercase">
           <Link href="/?v=main">
             {isMain ? 'NINA' : config.title}
           </Link>
@@ -44,7 +39,7 @@ export function SiteNav({ variant = 'main' }: { variant?: SiteVariant }) {
           {config.nav.map((item) => (
             <span
               key={item.href}
-              className="text-sm uppercase tracking-[0.3em]"
+              className="text-sm font-bold uppercase tracking-[0.3em]"
             >
               {item.label}
             </span>
@@ -76,10 +71,7 @@ export function SiteNav({ variant = 'main' }: { variant?: SiteVariant }) {
               {config.nav.map((item) => (
                 <span
                   key={item.href}
-                  className={cn(
-                    "text-xl font-bold tracking-tighter uppercase border-b border-current/10 pb-3",
-                    isArt ? "font-[family-name:var(--font-cinzel)]" : "font-[family-name:var(--font-space-mono)]"
-                  )}
+                  className="text-xl font-bold tracking-tighter uppercase border-b border-current/10 pb-3"
                 >
                   {item.label}
                 </span>

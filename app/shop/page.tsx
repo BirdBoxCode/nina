@@ -29,7 +29,7 @@ export default async function ShopPage() {
                   <h3 className="text-lg font-bold tracking-tight uppercase">Product {i}</h3>
                   <p className="text-xs opacity-50 uppercase tracking-widest mt-1">Limited Edition</p>
                 </div>
-                <span className="text-sm font-mono opacity-60">€ —,—</span>
+                <span className="text-sm font-sans opacity-60">€ —,—</span>
               </div>
             </div>
           ))}

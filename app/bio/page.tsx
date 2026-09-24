@@ -26,7 +26,7 @@ export default async function BioPage() {
           <div className="md:col-span-7 flex flex-col justify-center">
             <div className="relative border-l border-white/10 pl-12 space-y-8">
               <div className="absolute -left-1 top-0 w-2 h-2 bg-white" />
-              <h2 className="text-4xl font-bold tracking-tighter uppercase font-[family-name:var(--font-space-mono)]">Philosophy</h2>
+              <h2 className="text-4xl font-bold tracking-tighter uppercase">Philosophy</h2>
               <p className="text-xl md:text-3xl font-light text-neutral-400 leading-snug">
                 {content.bio}
               </p>
