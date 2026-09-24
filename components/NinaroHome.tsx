@@ -7,10 +7,10 @@ import { TransitionLink } from '@/components/PageTransition'
 /* --- Design tokens (Nocturne, run on a light paper ground) --- */
 const PAPER = '#EFEBE2'
 const FRAME = '#E6E1D7'
-const INK = '#7A7365'
-const MUTED = '#7A7365'
-const MUTED_LIGHT = '#8C8678'
-const DIMMED = '#9E988B'
+const INK = '#5C5970'
+const MUTED = '#5C5970'
+const MUTED_LIGHT = '#7D7A8E'
+const DIMMED = '#A5A2B2'
 const RULE = '#b2b6ca'
 const RULE_LIGHT = '#cfd3e5'
 const BORDER = '#dcd8ce'
@@ -79,7 +79,7 @@ const WORKS = [
 
 /**
  * Nav labels: the top bar pair and the footer links, its only users. Neutronic Rounded
- * regular — no uppercase and light tracking, the wide .26em here was tuned for small caps.
+ * regular with light tracking; the top bar pair overrides weight and tracking for Bold caps.
  */
 const MICRO: React.CSSProperties = {
   fontFamily: 'var(--font-sans)',
@@ -393,7 +393,7 @@ export function NinaroHome() {
               <Image src={ART.icon2} alt="" width={18} height={18} className="w-[18px] h-[18px] ml-1" />
               <Image src={ART.icon3} alt="" width={18} height={18} className="w-[18px] h-[18px]" />
             </span>
-            <span style={{ ...MICRO, fontSize: '21px', fontWeight: 700, color: MUTED }}>{menuOpen ? 'Close' : 'Menu'}</span>
+            <span style={{ ...MICRO, fontSize: '21px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: MUTED }}>{menuOpen ? 'Close' : 'Menu'}</span>
           </button>
 
           <a
@@ -403,7 +403,7 @@ export function NinaroHome() {
             className="flex items-center gap-3 p-1.5"
             style={{ animation: 'nr-fadeup 1s ease .35s both' }}
           >
-            <span style={{ ...MICRO, fontSize: '21px', fontWeight: 700, color: MUTED }}>Tattoo</span>
+            <span style={{ ...MICRO, fontSize: '21px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: MUTED }}>Tattoo</span>
             <Image src={ART.icon2} alt="" width={26} height={26} className="w-[26px] h-[26px]" aria-hidden="true" />
           </a>
         </div>
@@ -656,6 +656,7 @@ export function NinaroHome() {
               fontSize: 'clamp(32px, 3.4vw, 46px)',
               fontWeight: 700,
               letterSpacing: '.04em',
+              textTransform: 'uppercase',
               color: INK,
             }}
           >
@@ -696,6 +697,7 @@ export function NinaroHome() {
                       fontWeight: 700,
                       fontSize: '28px',
                       letterSpacing: '.05em',
+                      textTransform: 'uppercase',
                     }}
                   >
                     {w.title}
