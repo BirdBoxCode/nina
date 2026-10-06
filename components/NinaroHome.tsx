@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { TransitionLink } from '@/components/PageTransition'
+import { TransitionLink, useTransitionCovered, REVEAL_CLEAR_DELAY } from '@/components/PageTransition'
+import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconWidth, useScrolled } from '@/components/SideNav'
 
 /* --- Design tokens (Nocturne, run on a light paper ground) --- */
 const PAPER = '#EFEBE2'
@@ -55,10 +56,30 @@ const WING: React.CSSProperties = {
 const WING_GAP = `calc(100% + ${LOGO_W} * 0.12)`
 
 const EASE = 'cubic-bezier(.2,.7,.2,1)'
+
+/* Load sequence, in seconds from the start: crest, wordmark, its light pass, top bar,
+   then the wings unfurl as the finale and the scroll line settles last. */
+const LOAD = {
+  crest: 0.15,
+  wordmark: 0.6,
+  sheen: 1.45,
+  bar: 1.0,
+  wings: 1.3,
+  wingStagger: 0.1,
+  cue: 2.2,
+  done: 2.7,
+}
+const UNFURL_EASE = 'cubic-bezier(.22,.8,.25,1)'
 const MENU_STAGGER = 70
 
 /* How far the logo tilts, in degrees, with the cursor at the far edge of the viewport. */
 const LOGO_TILT = 7
+
+/* Crest turn toward a hovered menu label: tilt in degrees and drift in px at full strength.
+   CREST_REDUCED scales the tilt for reduced-motion users, who get no drift or sweep. */
+const CREST_TILT = 18
+const CREST_DRIFT = 24
+const CREST_REDUCED = 0.45
 
 /* Menu icons swell toward the cursor: full ICON_GROW scale at the edge, none past ICON_REACH px. */
 const ICON_GROW = 0.12
@@ -69,6 +90,20 @@ const GRAIN_URL =
   `<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/>` +
   `<feColorMatrix type='saturate' values='0'/></filter>` +
   `<rect width='220' height='220' filter='url(%23n)' opacity='0.34'/></svg>")`
+
+/* Crest-shaped mask for the light layers over the crest. Screen blend lifts the art
+   without washing the paper around it, as the wordmark sheen does. */
+const CREST_MASK: React.CSSProperties = {
+  WebkitMaskImage: `url(${ART.ornament})`,
+  maskImage: `url(${ART.ornament})`,
+  WebkitMaskSize: 'contain',
+  maskSize: 'contain',
+  WebkitMaskRepeat: 'no-repeat',
+  maskRepeat: 'no-repeat',
+  WebkitMaskPosition: 'center',
+  maskPosition: 'center',
+  mixBlendMode: 'screen',
+}
 
 /* Ghost line PNGs are white line art on transparent; invert + multiply reads them dark on paper. */
 const GHOST_FILTER: React.CSSProperties = {
@@ -211,9 +246,24 @@ export function NinaroHome() {
   const [iconNear, setIconNear] = useState(0)
   const iconsRef = useRef<HTMLSpanElement | null>(null)
   const logoRef = useRef<HTMLDivElement | null>(null)
+  // Crest aim: unit vector from the crest's centre to the hovered label's centre.
+  const crestRef = useRef<HTMLDivElement | null>(null)
+  const sweepRef = useRef<HTMLDivElement | null>(null)
+  const [aim, setAim] = useState({ x: 0, y: 0 })
+  const [reducedMotion, setReducedMotion] = useState(false)
   const menuBtnRef = useRef<HTMLButtonElement | null>(null)
   const layerRef = useRef<HTMLDivElement | null>(null)
   const { register, revealStyle } = useReveal()
+  // Arriving via the page wipe mounts this page hidden, so the load sequence waits for
+  // the panel to clear. Captured once at mount so it never re-triggers.
+  const covered = useTransitionCovered()
+  const [loadDelay] = useState(() => (covered ? REVEAL_CLEAR_DELAY : 0))
+  const at = (t: number) => `${(loadDelay + t).toFixed(2)}s`
+  // Logo hover (Play reveal, wing fade) holds off until the sequence has played out.
+  const [loaded, setLoaded] = useState(false)
+  const scrolled = useScrolled()
+  // The hero's own logo covers the crest's job until most of the hero has scrolled away.
+  const pastHero = useScrolled(() => window.innerHeight * 0.75)
 
   // Below ~900px the scattered menu stacks into a centred column (same stagger).
   useEffect(() => {
@@ -312,13 +362,65 @@ export function NinaroHome() {
   }, [menuOpen])
 
   const toggleMenu = () => {
-    setMenuOpen((o) => !o)
     setHover(null)
+    // The scattered labels live in the hero, so opening from further down the page
+    // first glides back to the top, then opens once the hero is in view.
+    if (menuOpen || window.scrollY < 4) {
+      setMenuOpen((o) => !o)
+      return
+    }
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
+    const start = performance.now()
+    const wait = () => {
+      if (window.scrollY < 4 || performance.now() - start > 1500) setMenuOpen(true)
+      else requestAnimationFrame(wait)
+    }
+    requestAnimationFrame(wait)
   }
 
   // On narrow screens the stacked menu would sit on top of the logo, so the centre
   // cluster steps aside while it is open. Desktop keeps the logo visible as designed.
   const centreHidden = narrow && menuOpen
+
+  // The crest leaves the cursor and turns to the hovered label. Desktop only: narrow
+  // screens hide the centre cluster while the menu is open.
+  const aiming = menuOpen && hover !== null && !narrow
+
+  const aimAt = (el: HTMLElement) => {
+    const crest = crestRef.current?.getBoundingClientRect()
+    if (!crest) return
+    const label = el.getBoundingClientRect()
+    const dx = label.left + label.width / 2 - (crest.left + crest.width / 2)
+    const dy = label.top + label.height / 2 - (crest.top + crest.height / 2)
+    const len = Math.hypot(dx, dy) || 1
+    setAim({ x: dx / len, y: dy / len })
+  }
+
+  useEffect(() => {
+    const id = setTimeout(() => setLoaded(true), (loadDelay + LOAD.done) * 1000)
+    return () => clearTimeout(id)
+  }, [loadDelay])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const sync = () => setReducedMotion(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
+  // Shimmer sweep across the crest while it is aimed. Driven through the Web Animations
+  // API so the loop needs no new keyframes in globals.css.
+  useEffect(() => {
+    const el = sweepRef.current
+    if (!el || !aiming || reducedMotion) return
+    const run = el.animate(
+      [{ backgroundPosition: '100% 0' }, { backgroundPosition: '0% 0' }],
+      { duration: 1600, iterations: Infinity, easing: 'ease-in-out' },
+    )
+    return () => run.cancel()
+  }, [aiming, reducedMotion])
 
   // The scattered labels sit on a fixed percentage grid, so at some viewport sizes one
   // lands on the logo. Measure and push only the labels that actually collide outward;
@@ -431,20 +533,24 @@ export function NinaroHome() {
 
       {/* ===== Hero ===== */}
       <section className="relative flex items-center justify-center h-screen min-h-[560px]">
-        {/* Top bar */}
+        {/* Top bar — fixed; compacts onto a paper band once the page scrolls. The bar
+            itself lets clicks through so its box never blocks the content below. */}
         <div
           // items-start: the menu icon column grows tall on desktop, so top-aligning
           // keeps TATTOO near the top rather than centred on the column.
-          className="absolute left-0 right-0 top-0 z-30 flex items-start justify-between px-[34px] py-[30px]"
+          className="pointer-events-none fixed left-0 right-0 top-0 z-30 flex items-start justify-between px-[34px]"
+          style={{ paddingTop: navBarPad(scrolled), transition: `padding-top ${NAV_TRANSITION}` }}
         >
+          <NavBand show={scrolled} />
+          <NavCrest compact show={pastHero && !menuOpen} />
           <button
             ref={menuBtnRef}
             type="button"
             onClick={toggleMenu}
             aria-label="Menu"
             aria-expanded={menuOpen}
-            className="flex items-start gap-3 bg-transparent border-0 p-1.5 cursor-pointer"
-            style={{ animation: 'nr-fadeup 1s ease .2s both' }}
+            className="pointer-events-auto relative flex items-start gap-3 bg-transparent border-0 p-1.5 cursor-pointer"
+            style={{ animation: `nr-bar-in .9s ${EASE} ${at(LOAD.bar)} both` }}
           >
             {/* Icon column, sized off the logo width to keep the design's proportion */}
             <span ref={iconsRef} className="block" aria-hidden="true">
@@ -455,9 +561,9 @@ export function NinaroHome() {
                 height={247}
                 className="block h-auto"
                 style={{
-                  width: ICON_COL_W,
+                  width: navIconWidth(scrolled),
                   transform: `scale(${(1 + iconNear * ICON_GROW).toFixed(3)})`,
-                  transition: `transform .5s ${EASE}`,
+                  transition: `width ${NAV_TRANSITION}, transform .5s ${EASE}`,
                 }}
               />
             </span>
@@ -467,8 +573,8 @@ export function NinaroHome() {
             href="https://lineacruda.com"
             target="_blank"
             rel="noopener"
-            className="flex items-center gap-3 p-1.5"
-            style={{ animation: 'nr-fadeup 1s ease .35s both' }}
+            className="pointer-events-auto relative flex items-center gap-3 p-1.5"
+            style={{ animation: `nr-bar-in .9s ${EASE} ${at(LOAD.bar + 0.08)} both` }}
           >
             <span style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: MUTED }}>Tattoo</span>
             <Image src={ART.icon2} alt="" width={26} height={26} className="w-[26px] h-[26px]" aria-hidden="true" />
@@ -477,7 +583,7 @@ export function NinaroHome() {
 
         {/* Centre cluster — hovering it reveals the game entry */}
         <div
-          onMouseEnter={() => setNear(true)}
+          onMouseEnter={() => loaded && setNear(true)}
           onMouseLeave={() => setNear(false)}
           className="relative z-20 flex items-center py-10"
           style={{
@@ -528,7 +634,6 @@ export function NinaroHome() {
           <div
             ref={logoRef}
             className="relative text-center"
-            style={{ animation: `nr-fadeup 1.5s ${EASE} .1s both` }}
           >
             {/* Wings — outside the tilt plane so they stay still, and positioned out of
                 flow so logoRef's box (read by the collision measure) is unchanged. */}
@@ -542,7 +647,11 @@ export function NinaroHome() {
                 width={1009}
                 height={355}
                 priority
-                style={{ ...WING, right: WING_GAP }}
+                style={{
+                  ...WING,
+                  right: WING_GAP,
+                  animation: `nr-unfurl-left 1.4s ${UNFURL_EASE} ${at(LOAD.wings)} both`,
+                }}
               />
               <Image
                 src={ART.wingRight}
@@ -550,7 +659,11 @@ export function NinaroHome() {
                 width={1007}
                 height={353}
                 priority
-                style={{ ...WING, left: WING_GAP }}
+                style={{
+                  ...WING,
+                  left: WING_GAP,
+                  animation: `nr-unfurl-right 1.4s ${UNFURL_EASE} ${at(LOAD.wings + LOAD.wingStagger)} both`,
+                }}
               />
             </div>
             <div
@@ -567,16 +680,74 @@ export function NinaroHome() {
             >
               {/* Opera senza crest — sits inside the tilt plane so it turns with the
                   wordmark, and is width-matched to it (same clamp as the wordmark). */}
-              <Image
-                src={ART.ornament}
-                alt=""
-                width={1192}
-                height={1328}
-                priority
-                className="block h-auto mx-auto"
-                style={{ width: LOGO_W, marginBottom: 'clamp(10px, 1.5vw, 22px)' }}
-              />
-              <div className="relative inline-block">
+              {/* Entrance lives on its own wrapper: the crest's aim is an inline transform,
+                  which a `both`-filled animation on the same element would pin. */}
+              <div style={{ animation: `nr-crest-in 1.2s ${EASE} ${at(LOAD.crest)} both` }}>
+              <div
+                ref={crestRef}
+                className="relative mx-auto"
+                style={{
+                  width: LOGO_W,
+                  marginBottom: 'clamp(10px, 1.5vw, 22px)',
+                  // While aimed, turn to the label and drift toward it. The parent plane
+                  // still tilts with the cursor, so its share is subtracted: the crest's
+                  // net turn is the label aim alone.
+                  transform: aiming
+                    ? `translate(${(reducedMotion ? 0 : aim.x * CREST_DRIFT).toFixed(1)}px, ` +
+                      `${(reducedMotion ? 0 : aim.y * CREST_DRIFT).toFixed(1)}px) ` +
+                      `perspective(900px) ` +
+                      `rotateX(${(-aim.y * CREST_TILT * (reducedMotion ? CREST_REDUCED : 1) + glide.y * LOGO_TILT).toFixed(2)}deg) ` +
+                      `rotateY(${(aim.x * CREST_TILT * (reducedMotion ? CREST_REDUCED : 1) - glide.x * LOGO_TILT).toFixed(2)}deg)`
+                    : 'none',
+                  transition: `transform .8s ${EASE}`,
+                }}
+              >
+                <Image
+                  src={ART.ornament}
+                  alt=""
+                  width={1192}
+                  height={1328}
+                  priority
+                  className="block h-auto w-full"
+                />
+                {/* Light on the side facing the label. Masked by the crest itself, like
+                    the wordmark sheen, so it falls on the artwork, not a box around it. */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    ...CREST_MASK,
+                    backgroundImage:
+                      'radial-gradient(circle, rgba(255,255,255,.55), rgba(255,255,255,0) 55%)',
+                    backgroundSize: '170% 170%',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: `${(50 + aim.x * 50).toFixed(1)}% ${(50 + aim.y * 50).toFixed(1)}%`,
+                    opacity: aiming ? 1 : 0,
+                    transition: `opacity .6s ease, background-position .8s ${EASE}`,
+                  }}
+                />
+                {/* Shimmer: a soft band of light that sweeps across while aimed */}
+                <div
+                  ref={sweepRef}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    ...CREST_MASK,
+                    backgroundImage:
+                      'linear-gradient(105deg, rgba(255,255,255,0) 38%, rgba(255,255,255,.5) 50%, rgba(255,255,255,0) 62%)',
+                    backgroundSize: '250% 100%',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: '100% 0',
+                    opacity: aiming && !reducedMotion ? 1 : 0,
+                    transition: 'opacity .6s ease',
+                  }}
+                />
+              </div>
+              </div>
+              <div
+                className="relative inline-block"
+                style={{ animation: `nr-fadeup 1s ${EASE} ${at(LOAD.wordmark)} both` }}
+              >
                 <Image
                   src={ART.ninaro}
                   alt="NINARÒ"
@@ -611,6 +782,29 @@ export function NinaroHome() {
                     mixBlendMode: 'screen',
                     transition: `background-position .5s ${EASE}`,
                     willChange: 'background-position',
+                  }}
+                />
+                {/* Load light pass — one band of light crosses the letters as they land */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    backgroundImage:
+                      'linear-gradient(105deg, rgba(255,255,255,0) 38%, rgba(255,255,255,.6) 50%, rgba(255,255,255,0) 62%)',
+                    backgroundSize: '250% 100%',
+                    backgroundRepeat: 'no-repeat',
+                    WebkitMaskImage: `url(${ART.ninaro})`,
+                    maskImage: `url(${ART.ninaro})`,
+                    WebkitMaskSize: 'contain',
+                    maskSize: 'contain',
+                    WebkitMaskRepeat: 'no-repeat',
+                    maskRepeat: 'no-repeat',
+                    WebkitMaskPosition: 'center',
+                    maskPosition: 'center',
+                    mixBlendMode: 'screen',
+                    // Resting state is off, so with animations disabled (reduced motion) it never shows.
+                    opacity: 0,
+                    animation: `nr-sheen-pass 1.1s ease-in-out ${at(LOAD.sheen)} both`,
                   }}
                 />
               </div>
@@ -688,9 +882,10 @@ export function NinaroHome() {
               'data-nr-item': i,
               tabIndex: menuOpen ? 0 : -1,
               'aria-hidden': !menuOpen,
-              onMouseEnter: () => {
+              onMouseEnter: (e: React.MouseEvent<HTMLAnchorElement>) => {
                 setHover(i)
                 setGhostSrc(c.ghost)
+                aimAt(e.currentTarget)
               },
               onMouseLeave: () => setHover(null),
             }
@@ -711,7 +906,7 @@ export function NinaroHome() {
         <div
           className="absolute left-1/2 bottom-[34px] -translate-x-1/2 z-20 flex flex-col items-center gap-[9px]"
           style={{
-            animation: 'nr-fadeup 1.2s ease 1.1s both',
+            animation: `nr-fadeup 1.2s ease ${at(LOAD.cue)} both`,
             opacity: centreHidden ? 0 : undefined,
             transition: 'opacity .5s ease',
           }}

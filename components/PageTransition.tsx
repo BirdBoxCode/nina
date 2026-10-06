@@ -4,7 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 
-const PANEL = '#3A2F63'
+const PANEL = '#BBBB89'
 const LINE = '#FBFFFF'
 
 /** Wipe in, draw the line, swap the route, wipe out. Durations in seconds. */

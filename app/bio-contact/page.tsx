@@ -1,5 +1,5 @@
 import { headers } from 'next/headers'
-import { SiteNav } from '@/components/SiteNav'
+import { SideNav } from '@/components/SideNav'
 import { SubPageLayout } from '@/components/SubPageLayout'
 import { ContactForm } from '@/components/ContactForm'
 import { SiteVariant, CONTENT } from '@/lib/constants'
@@ -11,7 +11,7 @@ export default async function BioContactPage() {
 
   return (
     <>
-      <SiteNav variant={variant} />
+      <SideNav />
       <SubPageLayout variant={variant} title="Bio/Contact">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
           <div className="space-y-12">

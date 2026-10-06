@@ -1,5 +1,5 @@
 import { headers } from 'next/headers'
-import { SiteNav } from '@/components/SiteNav'
+import { SideNav } from '@/components/SideNav'
 import { SubPageLayout } from '@/components/SubPageLayout'
 import { SiteVariant } from '@/lib/constants'
 
@@ -25,7 +25,7 @@ export function createPortfolioPage(title: string, subtitle: string) {
 
     return (
       <>
-        <SiteNav variant={variant} />
+        <SideNav />
         <SubPageLayout variant={variant} title={title} subtitle={subtitle}>
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
             {[1, 2, 3, 4, 5, 6].map((i) => (
