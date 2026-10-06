@@ -1,5 +1,5 @@
 import { headers } from 'next/headers'
-import { SiteNav } from '@/components/SiteNav'
+import { SideNav } from '@/components/SideNav'
 import { PageContainer } from '@/components/PageContainer'
 import { SiteVariant, CONTENT } from '@/lib/constants'
 
@@ -24,8 +24,9 @@ export default async function AboutPage() {
     : CONTENT[variant].about
 
   return (
-    <>
-      <SiteNav variant={variant} />
+    // Paper ground and ink to match the home page
+    <div className="min-h-screen" style={{ background: '#EFEBE2', color: '#5C5970' }}>
+      <SideNav />
       <PageContainer>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center min-h-[60vh]">
           {/* Image Side */}
@@ -50,6 +51,6 @@ export default async function AboutPage() {
           </div>
         </div>
       </PageContainer>
-    </>
+    </div>
   )
 }

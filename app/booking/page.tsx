@@ -1,5 +1,5 @@
 import { headers } from 'next/headers'
-import { SiteNav } from '@/components/SiteNav'
+import { SideNav } from '@/components/SideNav'
 import { SubPageLayout } from '@/components/SubPageLayout'
 import { ContactForm } from '@/components/ContactForm'
 import { SiteVariant } from '@/lib/constants'
@@ -10,7 +10,7 @@ export default async function BookingPage() {
 
   return (
     <>
-      <SiteNav variant={variant} />
+      <SideNav />
       <SubPageLayout variant={variant} title="Booking" subtitle="Waiting List">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-24">
           <div className="space-y-12">

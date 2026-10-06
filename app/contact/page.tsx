@@ -1,5 +1,5 @@
 import { headers } from 'next/headers'
-import { SiteNav } from '@/components/SiteNav'
+import { SideNav } from '@/components/SideNav'
 import { PageContainer } from '@/components/PageContainer'
 import { ContactForm } from '@/components/ContactForm'
 import { SiteVariant } from '@/lib/constants'
@@ -9,8 +9,9 @@ export default async function ContactPage() {
   const variant = (headersList.get('x-site-variant') as SiteVariant) || 'main'
 
   return (
-    <>
-      <SiteNav variant={variant} />
+    // Paper ground and ink to match the home page
+    <div className="min-h-screen" style={{ background: '#EFEBE2', color: '#5C5970' }}>
+      <SideNav />
       <PageContainer className="flex items-center justify-center min-h-[calc(100vh-6rem)]">
         <div className="w-full max-w-xl">
           <div className="text-center mb-12">
@@ -28,6 +29,6 @@ export default async function ContactPage() {
           </div>
         </div>
       </PageContainer>
-    </>
+    </div>
   )
 }

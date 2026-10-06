@@ -1,5 +1,5 @@
 import { headers } from 'next/headers'
-import { SiteNav } from '@/components/SiteNav'
+import { SideNav } from '@/components/SideNav'
 import { SubPageLayout } from '@/components/SubPageLayout'
 import { SiteVariant, CONTENT } from '@/lib/constants'
 
@@ -10,7 +10,7 @@ export default async function BioPage() {
 
   return (
     <>
-      <SiteNav variant={variant} />
+      <SideNav />
       <SubPageLayout variant={variant} title="Bio">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-24">
           <div className="md:col-span-5 space-y-12">

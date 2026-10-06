@@ -67,6 +67,32 @@
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: none; }
 }
+/* Home load sequence */
+@keyframes nr-crest-in {
+  from { opacity: 0; transform: translateY(14px) scale(.94); filter: blur(6px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+@keyframes nr-bar-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+/* Wings unfurl outward: revealed from the edge beside the crest out to the tip. */
+@keyframes nr-unfurl-left {
+  0%   { opacity: 0; clip-path: inset(0 0 0 100%); filter: blur(3px); }
+  25%  { opacity: 1; }
+  100% { opacity: 1; clip-path: inset(0 0 0 0); filter: none; }
+}
+@keyframes nr-unfurl-right {
+  0%   { opacity: 0; clip-path: inset(0 100% 0 0); filter: blur(3px); }
+  25%  { opacity: 1; }
+  100% { opacity: 1; clip-path: inset(0 0 0 0); filter: none; }
+}
+@keyframes nr-sheen-pass {
+  0%   { opacity: 0; background-position: 100% 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; background-position: 0% 0; }
+}
 @keyframes nr-cue {
   0%, 100% { transform: translateY(0); opacity: .5; }
   50%      { transform: translateY(7px); opacity: 1; }

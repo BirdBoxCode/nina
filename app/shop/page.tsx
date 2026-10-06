@@ -1,5 +1,5 @@
 import { headers } from 'next/headers'
-import { SiteNav } from '@/components/SiteNav'
+import { SideNav } from '@/components/SideNav'
 import { SubPageLayout } from '@/components/SubPageLayout'
 import { SiteVariant } from '@/lib/constants'
 
@@ -9,7 +9,7 @@ export default async function ShopPage() {
 
   return (
     <>
-      <SiteNav variant={variant} />
+      <SideNav />
       <SubPageLayout 
         variant={variant} 
         title="Shop" 
