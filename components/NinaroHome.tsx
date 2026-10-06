@@ -23,19 +23,46 @@ const ART = {
   icon1: '/images/assets/icons/icon 1.png',
   icon2: '/images/assets/icons/icon 2.png',
   icon3: '/images/assets/icons/icon 3.png',
+  menuIcons: '/images/assets/icons/purple-icons.png',
+  playIcons: '/images/assets/icons/green-icons.png',
   bull: '/images/assets/components/bull.png',
   dragon: '/images/assets/components/dragon.png',
   shell: '/images/assets/components/shell.png',
   sword: '/images/assets/components/sword.png',
   marking: '/images/assets/components/marking.png',
   marking2: '/images/assets/components/marking-2.png',
+  wingLeft: '/images/assets/components/wings-left.png',
+  wingRight: '/images/assets/components/wings-right.png',
 }
+
+/* Crest/wordmark width; the wings are sized off it so they keep the design's proportion. */
+const LOGO_W = 'clamp(140px, 19vw, 300px)'
+
+/* Icon columns (menu + play). Sized off the pre-shrink logo clamp so they keep their size. */
+const ICON_COL_W = 'calc(clamp(174px, 24.5vw, 340px) * 0.133)'
+
+/* Wings flank the crest: ~1.75× its width, a small gap off its edge, centred on its
+   height (crest art is 1192×1328, so its middle sits at 0.557 of the logo width). */
+const WING: React.CSSProperties = {
+  position: 'absolute',
+  top: `calc(${LOGO_W} * 0.557)`,
+  width: `calc(${LOGO_W} * 1.75)`,
+  maxWidth: 'none',
+  height: 'auto',
+  transform: 'translateY(-50%)',
+  pointerEvents: 'none',
+}
+const WING_GAP = `calc(100% + ${LOGO_W} * 0.12)`
 
 const EASE = 'cubic-bezier(.2,.7,.2,1)'
 const MENU_STAGGER = 70
 
 /* How far the logo tilts, in degrees, with the cursor at the far edge of the viewport. */
 const LOGO_TILT = 7
+
+/* Menu icons swell toward the cursor: full ICON_GROW scale at the edge, none past ICON_REACH px. */
+const ICON_GROW = 0.12
+const ICON_REACH = 180
 
 const GRAIN_URL =
   `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'>` +
@@ -180,8 +207,11 @@ export function NinaroHome() {
   // Cursor offset from the logo centre, normalised to -1..1 per axis. Drives both the
   // parallax drift and where the sheen falls, so the two always agree.
   const [glide, setGlide] = useState({ x: 0, y: 0 })
+  // 0..1 — how close the cursor is to the menu icons; 1 is touching.
+  const [iconNear, setIconNear] = useState(0)
+  const iconsRef = useRef<HTMLSpanElement | null>(null)
   const logoRef = useRef<HTMLDivElement | null>(null)
-  const barRef = useRef<HTMLDivElement | null>(null)
+  const menuBtnRef = useRef<HTMLButtonElement | null>(null)
   const layerRef = useRef<HTMLDivElement | null>(null)
   const { register, revealStyle } = useReveal()
 
@@ -228,6 +258,33 @@ export function NinaroHome() {
     }
   }, [])
 
+  // Menu icon proximity. Measured off the unscaled wrapper span, so the scale applied to
+  // the image inside never feeds back into the distance. Same gating as the logo tilt.
+  useEffect(() => {
+    if (!window.matchMedia('(hover: hover)').matches) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    let frame = 0
+    const onMove = (e: PointerEvent) => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        const box = iconsRef.current?.getBoundingClientRect()
+        if (!box) return
+        // Distance to the nearest point of the icon column, 0 when inside it.
+        const dx = Math.max(box.left - e.clientX, 0, e.clientX - box.right)
+        const dy = Math.max(box.top - e.clientY, 0, e.clientY - box.bottom)
+        const t = Math.max(0, 1 - Math.hypot(dx, dy) / ICON_REACH)
+        setIconNear((prev) => (Math.abs(prev - t) < 0.01 ? prev : t))
+      })
+    }
+
+    window.addEventListener('pointermove', onMove, { passive: true })
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('pointermove', onMove)
+    }
+  }, [])
+
   useEffect(() => {
     if (!menuOpen) return
     const close = () => {
@@ -237,13 +294,13 @@ export function NinaroHome() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') close()
     }
-    // Anything that is not a menu label dismisses. The top bar is excluded whole: this
+    // Anything that is not a menu label dismisses. The menu button is excluded: this
     // fires on pointerdown, so closing there would only be undone by the button's click.
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as HTMLElement | null
       if (!target) return
       if (target.closest('[data-nr-item]')) return
-      if (barRef.current?.contains(target)) return
+      if (menuBtnRef.current?.contains(target)) return
       close()
     }
     window.addEventListener('keydown', onKey)
@@ -270,6 +327,7 @@ export function NinaroHome() {
   useEffect(() => {
     const GUTTER = 20
     const EDGE = 12
+    const GHOST_GAP = 48
 
     const measure = () => {
       const logo = logoRef.current
@@ -308,12 +366,13 @@ export function NinaroHome() {
 
       setNudge((prev) => (prev.every((d, i) => d === next[i]) ? prev : next))
 
-      // Clear the logo vertically as well: pin the art's bottom edge above the logo's top,
-      // and fit it into the band between the top bar and the logo.
-      const barBottom = barRef.current?.getBoundingClientRect().bottom ?? origin.top
-      const bandTop = barBottom + GUTTER
-      const bandBottom = box.top - GUTTER
-      const bottom = Math.round(origin.bottom - box.top + GUTTER)
+      // Clear the logo vertically as well: pin the art's bottom edge GHOST_GAP above the
+      // logo's top, and fit it into the band above. The band runs to the hero's top edge,
+      // not the top bar's: the bar's items sit in the corners, clear of the centred art,
+      // and its tall icon column would otherwise squeeze the band shut.
+      const bandTop = origin.top + GUTTER
+      const bandBottom = box.top - GHOST_GAP
+      const bottom = Math.round(origin.bottom - box.top + GHOST_GAP)
       const maxHeight = Math.max(0, Math.round(bandBottom - bandTop))
 
       // Widest the art can be without reaching a label that shares its band. The art is
@@ -374,26 +433,34 @@ export function NinaroHome() {
       <section className="relative flex items-center justify-center h-screen min-h-[560px]">
         {/* Top bar */}
         <div
-          ref={barRef}
-          // items-center, not items-start: the button's 64px icon column sets the bar
-          // height, so centring both sides lands MENU and TATTOO on one line while the
-          // label keeps its designed position beside the middle icon.
-          className="absolute left-0 right-0 top-0 z-30 flex items-center justify-between px-[34px] py-[30px]"
+          // items-start: the menu icon column grows tall on desktop, so top-aligning
+          // keeps TATTOO near the top rather than centred on the column.
+          className="absolute left-0 right-0 top-0 z-30 flex items-start justify-between px-[34px] py-[30px]"
         >
           <button
+            ref={menuBtnRef}
             type="button"
             onClick={toggleMenu}
             aria-label="Menu"
             aria-expanded={menuOpen}
-            className="flex items-center gap-3 bg-transparent border-0 p-1.5 cursor-pointer"
+            className="flex items-start gap-3 bg-transparent border-0 p-1.5 cursor-pointer"
             style={{ animation: 'nr-fadeup 1s ease .2s both' }}
           >
-            <span className="flex flex-col gap-[5px]" aria-hidden="true">
-              <Image src={ART.icon1} alt="" width={18} height={18} className="w-[18px] h-[18px]" />
-              <Image src={ART.icon2} alt="" width={18} height={18} className="w-[18px] h-[18px] ml-1" />
-              <Image src={ART.icon3} alt="" width={18} height={18} className="w-[18px] h-[18px]" />
+            {/* Icon column, sized off the logo width to keep the design's proportion */}
+            <span ref={iconsRef} className="block" aria-hidden="true">
+              <Image
+                src={ART.menuIcons}
+                alt=""
+                width={77}
+                height={247}
+                className="block h-auto"
+                style={{
+                  width: ICON_COL_W,
+                  transform: `scale(${(1 + iconNear * ICON_GROW).toFixed(3)})`,
+                  transition: `transform .5s ${EASE}`,
+                }}
+              />
             </span>
-            <span style={{ ...MICRO, fontSize: '21px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: MUTED }}>{menuOpen ? 'Close' : 'Menu'}</span>
           </button>
 
           <a
@@ -403,7 +470,7 @@ export function NinaroHome() {
             className="flex items-center gap-3 p-1.5"
             style={{ animation: 'nr-fadeup 1s ease .35s both' }}
           >
-            <span style={{ ...MICRO, fontSize: '21px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: MUTED }}>Tattoo</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: MUTED }}>Tattoo</span>
             <Image src={ART.icon2} alt="" width={26} height={26} className="w-[26px] h-[26px]" aria-hidden="true" />
           </a>
         </div>
@@ -436,11 +503,12 @@ export function NinaroHome() {
             }}
           >
             <Image
-              src={ART.ornament}
+              src={ART.playIcons}
               alt=""
-              width={64}
-              height={74}
-              className="w-16 h-[74px] object-contain"
+              width={78}
+              height={247}
+              className="block h-auto"
+              style={{ width: ICON_COL_W }}
             />
             <span
               style={{
@@ -459,9 +527,32 @@ export function NinaroHome() {
           {/* Logo block */}
           <div
             ref={logoRef}
-            className="text-center"
+            className="relative text-center"
             style={{ animation: `nr-fadeup 1.5s ${EASE} .1s both` }}
           >
+            {/* Wings — outside the tilt plane so they stay still, and positioned out of
+                flow so logoRef's box (read by the collision measure) is unchanged. */}
+            <div
+              aria-hidden="true"
+              style={{ opacity: menuOpen ? 0.2 : near ? 0.3 : 0.7, transition: 'opacity .5s ease' }}
+            >
+              <Image
+                src={ART.wingLeft}
+                alt=""
+                width={1009}
+                height={355}
+                priority
+                style={{ ...WING, right: WING_GAP }}
+              />
+              <Image
+                src={ART.wingRight}
+                alt=""
+                width={1007}
+                height={353}
+                priority
+                style={{ ...WING, left: WING_GAP }}
+              />
+            </div>
             <div
               style={{
                 // Position is pinned; only the plane turns. rotateY(+x) pushes the right
@@ -483,7 +574,7 @@ export function NinaroHome() {
                 height={1328}
                 priority
                 className="block h-auto mx-auto"
-                style={{ width: 'clamp(174px, 24.5vw, 340px)', marginBottom: 'clamp(10px, 1.5vw, 22px)' }}
+                style={{ width: LOGO_W, marginBottom: 'clamp(10px, 1.5vw, 22px)' }}
               />
               <div className="relative inline-block">
                 <Image
@@ -493,7 +584,7 @@ export function NinaroHome() {
                   height={350}
                   priority
                   className="block h-auto"
-                  style={{ width: 'clamp(174px, 24.5vw, 340px)' }}
+                  style={{ width: LOGO_W }}
                 />
                 {/* Sheen. Masked by the wordmark itself, so the light falls on the
                     letterforms rather than in a rectangle around them. */}
@@ -544,8 +635,8 @@ export function NinaroHome() {
             aria-hidden="true"
             className="absolute left-1/2 pointer-events-none"
             style={{
-              width: 'min(34vh, 38vw)',
-              height: 'min(34vh, 38vw)',
+              width: 'min(46vh, 50vw)',
+              height: 'min(46vh, 50vw)',
               ...(ghostBox
                 ? {
                     bottom: ghostBox.bottom,
@@ -575,7 +666,7 @@ export function NinaroHome() {
               // Stacked: a 6% step tightens the column, and the 26% start keeps the
               // 9-item span (48%) centred in the hero.
               top: narrow ? `${26 + i * 6}%` : c.top,
-              fontFamily: 'var(--font-sans)',
+              fontFamily: 'var(--font-display)',
               fontSize: 'clamp(19px, 1.9vw, 29px)',
               // Open enough to breathe while the script still joins; the hover widening
               // is the original gesture rescaled to this baseline, not a new one.
@@ -625,9 +716,6 @@ export function NinaroHome() {
             transition: 'opacity .5s ease',
           }}
         >
-          <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 400, fontSize: '16px', letterSpacing: '.08em', color: MUTED_LIGHT }}>
-            Scroll
-          </span>
           <span
             className="w-px h-[34px]"
             style={{
