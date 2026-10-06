@@ -111,6 +111,7 @@ export function NavCrest({ compact, show }: { compact: boolean; show: boolean })
     // Outer box carries placement and visibility; the link inside carries the entrance.
     // Kept apart because nr-fadeup fills `both`, and would pin opacity and transform.
     <div
+      data-transition-crest
       className="absolute left-1/2"
       style={{
         top: compact ? CREST_TOP_COMPACT : CREST_TOP,

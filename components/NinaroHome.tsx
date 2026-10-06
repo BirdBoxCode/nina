@@ -746,6 +746,7 @@ export function NinaroHome() {
               <div style={{ animation: `nr-crest-in 1.2s ${EASE} ${at(LOAD.crest)} both` }}>
               <div
                 ref={crestRef}
+                data-transition-crest
                 className="relative mx-auto"
                 style={{
                   width: LOGO_W,
