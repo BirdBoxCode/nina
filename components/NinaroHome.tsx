@@ -70,6 +70,14 @@ const LOAD = {
   done: 2.7,
 }
 const UNFURL_EASE = 'cubic-bezier(.22,.8,.25,1)'
+
+/* Scroll parallax speeds, relative to the page (1 = moves with it, 0 = holds still). */
+const PARALLAX = {
+  logo: 1.12,
+  wings: 0.6,
+  dragon: 0.6,
+  sword: 0.2,
+}
 const MENU_STAGGER = 70
 
 /* How far the logo tilts, in degrees, with the cursor at the far edge of the viewport. */
@@ -246,6 +254,12 @@ export function NinaroHome() {
   const [iconNear, setIconNear] = useState(0)
   const iconsRef = useRef<HTMLSpanElement | null>(null)
   const logoRef = useRef<HTMLDivElement | null>(null)
+  // Parallax layers, moved directly from a scroll frame (no re-render per frame).
+  const logoParRef = useRef<HTMLDivElement | null>(null)
+  const wingsParRef = useRef<HTMLDivElement | null>(null)
+  const workRef = useRef<HTMLElement | null>(null)
+  const dragonRef = useRef<HTMLDivElement | null>(null)
+  const swordRef = useRef<HTMLDivElement | null>(null)
   // Crest aim: unit vector from the crest's centre to the hovered label's centre.
   const crestRef = useRef<HTMLDivElement | null>(null)
   const sweepRef = useRef<HTMLDivElement | null>(null)
@@ -396,6 +410,48 @@ export function NinaroHome() {
     const len = Math.hypot(dx, dy) || 1
     setAim({ x: dx / len, y: dy / len })
   }
+
+  // Scroll parallax. Each layer's speed is relative to the page: 1 moves with it, 0 holds
+  // still on screen. Transforms are written straight to the nodes once per frame.
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    let frame = 0
+    const apply = () => {
+      frame = 0
+      const vh = window.innerHeight
+      // Phones get a gentler hero separation.
+      const soft = window.innerWidth < 900 ? 0.6 : 1
+      const set = (el: HTMLElement | null, y: number) => {
+        if (el) el.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0)`
+      }
+
+      // Hero: only while it is on screen.
+      const hy = Math.min(window.scrollY, vh * 1.2)
+      set(logoParRef.current, -hy * (PARALLAX.logo - 1) * soft)
+      set(wingsParRef.current, hy * (1 - PARALLAX.wings) * soft)
+
+      // Selected work. A layer at speed s lags the page by (1 - s) of the distance
+      // scrolled past its anchor: the dragon is anchored to the section reaching the top
+      // of the screen, the sword to the section entering at the bottom.
+      const top = workRef.current?.getBoundingClientRect().top
+      if (top === undefined) return
+      set(dragonRef.current, (1 - PARALLAX.dragon) * -top)
+      set(swordRef.current, (1 - PARALLAX.sword) * (vh - top))
+    }
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(apply)
+    }
+
+    apply()
+    window.addEventListener('scroll', schedule, { passive: true })
+    window.addEventListener('resize', schedule)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', schedule)
+      window.removeEventListener('resize', schedule)
+    }
+  }, [])
 
   useEffect(() => {
     const id = setTimeout(() => setLoaded(true), (loadDelay + LOAD.done) * 1000)
@@ -637,6 +693,8 @@ export function NinaroHome() {
           >
             {/* Wings — outside the tilt plane so they stay still, and positioned out of
                 flow so logoRef's box (read by the collision measure) is unchanged. */}
+            {/* Wings parallax — trails the page, so the logo lifts away from them on scroll */}
+            <div ref={wingsParRef} style={{ willChange: 'transform' }}>
             <div
               aria-hidden="true"
               style={{ opacity: menuOpen ? 0.2 : near ? 0.3 : 0.7, transition: 'opacity .5s ease' }}
@@ -666,6 +724,9 @@ export function NinaroHome() {
                 }}
               />
             </div>
+            </div>
+            {/* Logo parallax — runs a touch ahead of the page so it pulls away from the wings */}
+            <div ref={logoParRef} style={{ willChange: 'transform' }}>
             <div
               style={{
                 // Position is pinned; only the plane turns. rotateY(+x) pushes the right
@@ -809,6 +870,7 @@ export function NinaroHome() {
                 />
               </div>
             </div>
+            </div>
           </div>
 
           {/* Mirrors the game entry so the logo stays optically centred */}
@@ -923,9 +985,33 @@ export function NinaroHome() {
 
       {/* ===== Selected work ===== */}
       <section
-        className="relative mx-auto max-w-[1500px]"
+        ref={workRef}
+        // isolate: the illustration layer sits at z -1, behind the cards but above the paper.
+        className="relative isolate mx-auto max-w-[1500px]"
         style={{ padding: 'clamp(60px, 9vw, 130px) clamp(22px, 5vw, 84px) 130px' }}
       >
+        {/* Background illustrations — full-bleed past the section's max width, clipped to
+            its height, each drifting at its own speed (see the parallax effect). */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-0 bottom-0 left-1/2 z-[-1] w-screen -translate-x-1/2 overflow-hidden"
+        >
+          <div
+            ref={dragonRef}
+            className="absolute"
+            style={{ top: 'clamp(40px, 6vw, 110px)', left: '-4vw', width: '40vw', opacity: 0.14, willChange: 'transform' }}
+          >
+            <Image src={ART.dragon} alt="" width={1200} height={698} className="block h-auto w-full" style={GHOST_FILTER} />
+          </div>
+          <div
+            ref={swordRef}
+            className="absolute top-0"
+            style={{ right: '-4vw', height: narrow ? '60vh' : '90vh', opacity: 0.16, willChange: 'transform' }}
+          >
+            <Image src={ART.sword} alt="" width={494} height={1200} className="block h-full w-auto" style={GHOST_FILTER} />
+          </div>
+        </div>
+
         <div
           ref={register(0)}
           data-reveal-index={0}
