@@ -432,11 +432,11 @@ export function NinaroHome() {
       set(wingsParRef.current, hy * (1 - PARALLAX.wings) * soft)
 
       // Selected work. A layer at speed s lags the page by (1 - s) of the distance
-      // scrolled past its anchor: the dragon is anchored to the section reaching the top
-      // of the screen, the sword to the section entering at the bottom.
+      // scrolled past its anchor: both are anchored to the section entering at the
+      // bottom, so they only drift down and never rise past the section's top edge.
       const top = workRef.current?.getBoundingClientRect().top
       if (top === undefined) return
-      set(dragonRef.current, (1 - PARALLAX.dragon) * -top)
+      set(dragonRef.current, (1 - PARALLAX.dragon) * (vh - top))
       set(swordRef.current, (1 - PARALLAX.sword) * (vh - top))
     }
     const schedule = () => {
@@ -813,8 +813,8 @@ export function NinaroHome() {
                 <Image
                   src={ART.ninaro}
                   alt="NINARÒ"
-                  width={1088}
-                  height={350}
+                  width={1252}
+                  height={463}
                   priority
                   className="block h-auto"
                   style={{ width: LOGO_W }}
@@ -996,6 +996,11 @@ export function NinaroHome() {
         <div
           aria-hidden="true"
           className="pointer-events-none absolute top-0 bottom-0 left-1/2 z-[-1] w-screen -translate-x-1/2 overflow-hidden"
+          // Soft top edge: art meeting the clip fades into the paper instead of a hard cut.
+          style={{
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 120px)',
+            maskImage: 'linear-gradient(to bottom, transparent 0, #000 120px)',
+          }}
         >
           <div
             ref={dragonRef}
@@ -1094,8 +1099,8 @@ export function NinaroHome() {
           <Image
             src={ART.ninaro}
             alt="NINARÒ"
-            width={1088}
-            height={350}
+            width={1252}
+            height={463}
             className="block h-auto"
             style={{ width: 'clamp(78px, 8vw, 104px)' }}
           />

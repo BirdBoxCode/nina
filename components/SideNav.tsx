@@ -282,7 +282,7 @@ export function SideNav() {
           className="mb-8 block"
           style={linkStyle(false, 0)}
         >
-          <Image src={NINARO} alt="NINARÒ" width={1088} height={350} className="block h-auto w-[132px]" />
+          <Image src={NINARO} alt="NINARÒ" width={1252} height={463} className="block h-auto w-[132px]" />
         </TransitionLink>
 
         <ul className="m-0 flex list-none flex-col gap-3 p-0">
