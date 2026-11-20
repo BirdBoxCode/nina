@@ -2,6 +2,7 @@ import { headers } from 'next/headers'
 import { SideNav } from '@/components/SideNav'
 import { PageContainer } from '@/components/PageContainer'
 import { SiteVariant, CONTENT } from '@/lib/constants'
+import { fetchArtAbout } from '@/lib/sanity/queries'
 
 export default async function AboutPage() {
   const headersList = await headers()
@@ -21,7 +22,9 @@ export default async function AboutPage() {
         bio: 'I am a multidisciplinary artist bridging the gap between canvas and skin. My work explores identity, memory, and the physical manifestation of abstract concepts.',
         image: '/art-hero.svg' // Placeholder
       }
-    : CONTENT[variant].about
+    : variant === 'art'
+      ? await fetchArtAbout(CONTENT.art.about)
+      : CONTENT[variant].about
 
   return (
     // Paper ground and ink to match the home page

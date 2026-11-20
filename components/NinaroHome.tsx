@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
+import type { SelectedWork } from '@/lib/sanity/queries'
 import { animate, motion, useDragControls, useMotionValue } from 'framer-motion'
 import { TransitionLink, useTransitionCovered, REVEAL_CLEAR_DELAY } from '@/components/PageTransition'
 import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconOverlay, navIconWidth, useScrolled } from '@/components/SideNav'
@@ -534,7 +535,19 @@ function useReveal() {
   return { register, revealStyle }
 }
 
-export function NinaroHome() {
+export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | null }) {
+  // Sanity cards (up to six) fill the design's slots in order; with none published, the placeholder set.
+  const cards = selectedWork?.cards ?? []
+  const works: (typeof WORKS[number] & { image?: string; objectPosition?: string })[] = cards.length
+    ? cards.map((c, i) => ({
+        ...WORKS[i],
+        title: c.title ?? WORKS[i].title,
+        cat: c.label ?? '',
+        href: c.href ?? WORKS[i].href,
+        image: c.image,
+        objectPosition: c.objectPosition,
+      }))
+    : WORKS
   const [menuOpen, setMenuOpen] = useState(false)
   const [hover, setHover] = useState<number | null>(null)
   // Which illustration is painted, held apart from whether it is visible: on mouse-out
@@ -1426,14 +1439,14 @@ export function NinaroHome() {
               color: INK,
             }}
           >
-            Selected work
+            {selectedWork?.heading ?? 'Selected work'}
           </h2>
           <span
             className="flex-1 h-px"
             style={{ background: `linear-gradient(to right, ${RULE_LIGHT} 0 60%, transparent)` }}
           />
           <span style={{ fontSize: '10.5px', letterSpacing: '.24em', textTransform: 'uppercase', color: MUTED_LIGHT }}>
-            2021 — 2026
+            {selectedWork?.years ?? '2021 — 2026'}
           </span>
         </div>
 
@@ -1441,20 +1454,31 @@ export function NinaroHome() {
           className="grid grid-cols-12"
           style={{ gap: 'clamp(20px, 3vw, 56px) clamp(20px, 2.6vw, 44px)' }}
         >
-          {WORKS.map((w, i) => (
+          {works.map((w, i) => (
             <div
-              key={w.title}
+              key={i}
               ref={register(i + 1)}
               data-reveal-index={i + 1}
               className={`col-span-12 min-[640px]:col-span-6 ${w.span}`}
               style={{ marginTop: w.mt, ...revealStyle(i + 1, 1.2, 30, w.delay) }}
             >
               <TransitionLink href={w.href} className="group block">
-                {/* Frame stays an empty placeholder until real project photography lands */}
+                {/* Frame stays an empty placeholder until a card image is set in Sanity */}
                 <div
                   className="relative overflow-hidden"
                   style={{ aspectRatio: w.ratio, background: FRAME }}
-                />
+                >
+                  {w.image && (
+                    <Image
+                      src={w.image}
+                      alt={w.title}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 900px) 50vw, 60vw"
+                      className="object-cover"
+                      style={{ objectPosition: w.objectPosition }}
+                    />
+                  )}
+                </div>
                 <div className="flex items-baseline justify-between gap-4 pt-[13px]">
                   <span
                     className="transition-colors duration-300 group-hover:text-[#5d5294]"
@@ -1478,13 +1502,13 @@ export function NinaroHome() {
         </div>
 
         <div
-          ref={register(WORKS.length + 1)}
-          data-reveal-index={WORKS.length + 1}
+          ref={register(works.length + 1)}
+          data-reveal-index={works.length + 1}
           className="flex flex-wrap items-center justify-between gap-6 pt-[26px]"
           style={{
             marginTop: 'clamp(70px, 9vw, 140px)',
             borderTop: `1px solid ${BORDER}`,
-            ...revealStyle(WORKS.length + 1, 1.1, 22),
+            ...revealStyle(works.length + 1, 1.1, 22),
           }}
         >
           <Image

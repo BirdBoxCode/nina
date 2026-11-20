@@ -7,8 +7,10 @@ export interface Artwork {
   year: string
   medium: string
   category: ArtCategory
-  /** Placeholder asset. Paths confirmed against /public. */
+  /** Placeholder path in /public, or a Sanity CDN URL. */
   image: string
+  /** CSS object-position from the Sanity hotspot, so `object-cover` crops around it. */
+  objectPosition?: string
   /** Line-art PNGs sit inside a tinted block; photographs fill the frame. */
   fit: 'cover' | 'contain'
   /** Backing colour behind the image — the only visible surface for `contain` pieces. */
@@ -66,24 +68,3 @@ export const ARTWORKS: Artwork[] = [
   { slug: 'sword-line', title: 'Sword Line', series: 'Spatial', year: '2022', medium: 'Mixed media', category: 'installations', image: LINE('sword'), fit: 'contain', tint: '#DDD9E7', description: PLACEHOLDER_BODY },
   { slug: 'after-image', title: 'After Image', series: 'Happening', year: '2022', medium: 'Mixed media', category: 'installations', image: PHOTO_D, fit: 'cover', tint: '#2E3352', description: PLACEHOLDER_BODY },
 ]
-
-export function getByCategory(category: ArtCategory): Artwork[] {
-  return ARTWORKS.filter((a) => a.category === category)
-}
-
-export function getBySlug(slug: string): Artwork | undefined {
-  return ARTWORKS.find((a) => a.slug === slug)
-}
-
-/** Prev/next wrap around within the piece's own category. */
-export function getNeighbours(slug: string): { prev: Artwork; next: Artwork } | null {
-  const piece = getBySlug(slug)
-  if (!piece) return null
-  const siblings = getByCategory(piece.category)
-  const i = siblings.findIndex((a) => a.slug === slug)
-  const len = siblings.length
-  return {
-    prev: siblings[(i - 1 + len) % len],
-    next: siblings[(i + 1) % len],
-  }
-}

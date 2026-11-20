@@ -3,11 +3,12 @@ import { SideNav } from '@/components/SideNav'
 import { SubPageLayout } from '@/components/SubPageLayout'
 import { ContactForm } from '@/components/ContactForm'
 import { SiteVariant, CONTENT } from '@/lib/constants'
+import { fetchArtAbout } from '@/lib/sanity/queries'
 
 export default async function BioContactPage() {
   const headersList = await headers()
   const variant = (headersList.get('x-site-variant') as SiteVariant) || 'main'
-  const content = CONTENT.art.about
+  const content = await fetchArtAbout(CONTENT.art.about)
 
   return (
     <>
