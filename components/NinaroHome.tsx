@@ -163,6 +163,9 @@ const GHOST_FILTER: React.CSSProperties = {
 
 /* Thrown background art may hang this share of itself past the section's edges. */
 const DRAG_OVERHANG = 0.6
+/* Glide home after `returnAfter`: a soft spring with a slight overshoot (none when calm). */
+const RETURN_SPRING = { type: 'spring', stiffness: 90, damping: 12 } as const
+const RETURN_SPRING_CALM = { type: 'spring', stiffness: 90, damping: 30 } as const
 /* Opacity lift and scale while the art is hovered or held, so it reads as something to pick up. */
 const DRAG_LIFT = 2
 const DRAG_SCALE = 1.03
@@ -173,11 +176,13 @@ const HIT_TOLERANCE = 9
 const HIT_ALPHA = 24
 /* One loose wobble the first time the art scrolls into view: a hint it can be moved. */
 const WOBBLE = [0, -2.2, 1.6, -0.8, 0]
+/* Hero wings: thrown within the hero, then home after this long. */
+const WING_RETURN = 2000
 
 /**
- * Background art the visitor can pick up. Thrown art stays where it lands; with
- * `returnHome` it springs back on release. Only its drawn lines take the pointer, and only
- * where nothing else on the page sits above them.
+ * Background art the visitor can pick up and throw; it bounces off the edges of `bounds`.
+ * Thrown art stays where it lands, or with `returnAfter` glides home that long after release.
+ * Only its drawn lines take the pointer, and only where nothing else on the page sits above.
  */
 function DragArt({
   src,
@@ -186,21 +191,28 @@ function DragArt({
   calm,
   opacity,
   hint,
-  returnHome,
+  overhang = DRAG_OVERHANG,
+  bounce = 'bounds',
+  returnAfter,
   onHot,
   className,
   children,
 }: {
   /** The art's image, read for the line-only hit test. */
   src: string
-  bounds?: React.RefObject<HTMLDivElement | null>
+  bounds?: React.RefObject<HTMLElement | null>
   enabled: boolean
   /** Reduced motion: no throw momentum, wobble or scale. */
   calm: boolean
   /** Resting opacity; omit when a parent owns it. */
   opacity?: number
   hint?: boolean
-  returnHome?: boolean
+  /** Share of the art's own size it may hang past the bounds. */
+  overhang?: number
+  /** 'viewport': bounce off the part of `bounds` on screen when grabbed (ignores overhang). */
+  bounce?: 'bounds' | 'viewport'
+  /** Ms after release before it glides back home; a new grab cancels it. */
+  returnAfter?: number
   onHot?: (hot: boolean) => void
   className?: string
   children: React.ReactNode
@@ -213,6 +225,17 @@ function DragArt({
   const [held, setHeld] = useState(false)
   const controls = useDragControls()
   const rotate = useMotionValue(0)
+  // Drag offset, owned here so the art can be sent home after a throw.
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const homeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(
+    () => () => {
+      if (homeTimer.current) clearTimeout(homeTimer.current)
+    },
+    [],
+  )
 
   useEffect(() => {
     onHot?.(hot)
@@ -333,18 +356,32 @@ function DragArt({
         drag={enabled}
         dragListener={false}
         dragControls={controls}
-        dragConstraints={returnHome ? undefined : bounds}
+        dragConstraints={bounds}
         dragElastic={0.12}
-        dragMomentum={!calm && !returnHome}
-        dragSnapToOrigin={returnHome}
-        dragTransition={returnHome ? { bounceStiffness: 260, bounceDamping: calm ? 40 : 14 } : undefined}
-        // The art is placed partly off-edge by design, so the section-box constraint is
-        // widened by DRAG_OVERHANG of its own size rather than snapping it fully inside.
+        dragMomentum={!calm}
+        // Art placed partly off-edge by design widens the bounds by `overhang` of its own
+        // size rather than snapping fully inside.
         onMeasureDragConstraints={(c) => {
           const el = ref.current
           if (!el) return
-          const w = el.offsetWidth * DRAG_OVERHANG
-          const h = el.offsetHeight * DRAG_OVERHANG
+          if (bounce === 'viewport') {
+            // framer measures the art without its drag offset, and `c` holds the offsets
+            // that keep it inside `bounds`. From those and the bounds' screen box, recover
+            // the art's resting box on screen, then cut the limits to the visible screen.
+            const b = bounds?.current?.getBoundingClientRect()
+            if (!b) return c
+            const art = { left: b.left - c.left, top: b.top - c.top, right: b.right - c.right, bottom: b.bottom - c.bottom }
+            // Home (0) always stays in range, so art resting partly off-edge by design is
+            // never yanked in when grabbed.
+            return {
+              left: Math.min(Math.max(c.left, -art.left), 0),
+              right: Math.max(Math.min(c.right, window.innerWidth - art.right), 0),
+              top: Math.min(Math.max(c.top, -art.top), 0),
+              bottom: Math.max(Math.min(c.bottom, window.innerHeight - art.bottom), 0),
+            }
+          }
+          const w = el.offsetWidth * overhang
+          const h = el.offsetHeight * overhang
           return { left: c.left - w, right: c.right + w, top: c.top - h, bottom: c.bottom + h }
         }}
         onPointerDown={(e) => {
@@ -353,14 +390,28 @@ function DragArt({
         onDragStart={() => {
           heldRef.current = true
           setHeld(true)
+          // Picked up again: cancel any pending or running trip home.
+          if (homeTimer.current) clearTimeout(homeTimer.current)
+          homeTimer.current = null
+          x.stop()
+          y.stop()
         }}
         onDragEnd={() => {
           heldRef.current = false
           setHeld(false)
+          if (returnAfter === undefined) return
+          homeTimer.current = setTimeout(() => {
+            homeTimer.current = null
+            const spring = calm ? RETURN_SPRING_CALM : RETURN_SPRING
+            animate(x, 0, spring)
+            animate(y, 0, spring)
+          }, returnAfter)
         }}
         animate={{ scale: lifted && !calm ? DRAG_SCALE : 1 }}
         transition={{ scale: { duration: 0.4, ease: [0.2, 0.7, 0.2, 1] } }}
         style={{
+          x,
+          y,
           rotate,
           opacity: opacity === undefined ? undefined : lifted ? Math.min(1, opacity * DRAG_LIFT) : opacity,
           transition: 'opacity .4s ease',
@@ -1024,10 +1075,18 @@ export function NinaroHome() {
                 transition: `opacity .5s ease, ${DEPTH_EASE}`,
               }}
             >
-              {/* Each wing can be picked up and springs home on release. The drag lives on
+              {/* Each wing can be thrown around the hero and glides home 2s after release. The drag lives on
                   a wrapper so it never meets the unfurl animation on the image. */}
               <div style={{ ...WING, right: WING_GAP, filter: SHADOW.wings, transition: SHADOW_EASE }}>
-                <DragArt src={ART.wingLeft} enabled={canDrag} calm={reducedMotion} returnHome onHot={onLeftWingHot}>
+                <DragArt
+                  src={ART.wingLeft}
+                  bounds={heroRef}
+                  overhang={0}
+                  returnAfter={WING_RETURN}
+                  enabled={canDrag}
+                  calm={reducedMotion}
+                  onHot={onLeftWingHot}
+                >
                   <Image
                     src={ART.wingLeft}
                     alt=""
@@ -1041,7 +1100,15 @@ export function NinaroHome() {
                 </DragArt>
               </div>
               <div style={{ ...WING, left: WING_GAP, filter: SHADOW.wings, transition: SHADOW_EASE }}>
-                <DragArt src={ART.wingRight} enabled={canDrag} calm={reducedMotion} returnHome onHot={onRightWingHot}>
+                <DragArt
+                  src={ART.wingRight}
+                  bounds={heroRef}
+                  overhang={0}
+                  returnAfter={WING_RETURN}
+                  enabled={canDrag}
+                  calm={reducedMotion}
+                  onHot={onRightWingHot}
+                >
                   <Image
                     src={ART.wingRight}
                     alt=""
@@ -1348,7 +1415,7 @@ export function NinaroHome() {
           >
             {/* Drag sits inside the parallax node: the scroll effect writes that node's
                 transform directly, so the two offsets add instead of overwriting. */}
-            <DragArt src={ART.dragon} bounds={artLayerRef} enabled={canDrag} calm={reducedMotion} opacity={0.14} hint>
+            <DragArt src={ART.dragon} bounds={artLayerRef} bounce="viewport" enabled={canDrag} calm={reducedMotion} opacity={0.14} hint>
               <Image src={ART.dragon} alt="" width={1200} height={698} draggable={false} className="block h-auto w-full" style={GHOST_FILTER} />
             </DragArt>
           </div>
@@ -1357,7 +1424,16 @@ export function NinaroHome() {
             className="absolute top-0"
             style={{ right: '-4vw', height: narrow ? '60vh' : '90vh', willChange: 'transform' }}
           >
-            <DragArt src={ART.sword} bounds={artLayerRef} enabled={canDrag} calm={reducedMotion} opacity={0.16} hint className="h-full">
+            <DragArt
+              src={ART.sword}
+              bounds={artLayerRef}
+              bounce="viewport"
+              enabled={canDrag}
+              calm={reducedMotion}
+              opacity={0.16}
+              hint
+              className="h-full"
+            >
               <Image src={ART.sword} alt="" width={494} height={1200} draggable={false} className="block h-full w-auto" style={GHOST_FILTER} />
             </DragArt>
           </div>
