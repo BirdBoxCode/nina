@@ -6,10 +6,14 @@ import dynamic from 'next/dynamic'
 import { createPortal } from 'react-dom'
 import { animate, motion, useDragControls, useMotionValue } from 'framer-motion'
 import { TransitionLink, useTransitionCovered, REVEAL_CLEAR_DELAY } from '@/components/PageTransition'
-import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconWidth, useScrolled } from '@/components/SideNav'
+import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconOverlay, navIconWidth, useScrolled } from '@/components/SideNav'
+import { liftShadow } from '@/lib/utils'
 
 /* Real-3D wordmark; WebGL, so client only. The flat PNG holds the layout until it is drawn. */
 const NinaroLogo3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.NinaroLogo3D), {
+  ssr: false,
+})
+const MenuIcons3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.MenuIcons3D), {
   ssr: false,
 })
 
@@ -19,6 +23,18 @@ const NinaroLogo3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) 
 const depth = (px: number) => `calc(var(--nr-dx, 0) * ${px}px) calc(var(--nr-dy, 0) * ${px}px)`
 const DEPTH_EASE = 'translate .9s cubic-bezier(.2,.7,.2,1)'
 const DEPTH = { bar: 4, ghost: -24, wings: -10, logo: 8 }
+/* Shadows on the paper, by height: the higher the layer, the longer and softer its shadow
+   and the further it slides from the cursor, so the layers visibly part. */
+const SHADOW = {
+  icons: liftShadow(1, 2.5, 2.5, 4, 0.4),
+  wings: liftShadow(2, 4, 4, 6, 0.22),
+  crest: liftShadow(3, 8, 10, 12, 0.3),
+  logo: liftShadow(2, 5, 5, 14, 0.42),
+}
+const SHADOW_EASE = 'filter .9s cubic-bezier(.2,.7,.2,1)'
+
+/* Play stays up this long after the cursor leaves the wordmark, so the gap to it can be crossed. */
+const PLAY_LINGER = 300
 /* Menu labels sit at mixed depths (10–22px) so they part from one another in space. */
 const labelDepth = (i: number) => 10 + ((i * 5) % 13)
 
@@ -56,8 +72,12 @@ const ART = {
 /* Crest/wordmark width; the wings are sized off it so they keep the design's proportion. */
 const LOGO_W = 'clamp(140px, 19vw, 300px)'
 
-/* Icon columns (menu + play). Sized off the pre-shrink logo clamp so they keep their size. */
-const ICON_COL_W = 'calc(clamp(174px, 24.5vw, 340px) * 0.133)'
+/* Play group, beside the wordmark and scaled with it so it never runs off a narrow screen.
+   The green strip (78×247) is turned to a row: its height is the strip's width. */
+const PLAY_ROW_H = `calc(${LOGO_W} * 0.15)`
+const PLAY_ROW_W = `calc(${LOGO_W} * 0.15 * 247 / 78)`
+const PLAY_TEXT = `clamp(12px, calc(${LOGO_W} * 0.057), 17px)`
+const PLAY_GAP = '16px'
 
 /* Wings flank the crest: ~1.75× its width, a small gap off its edge, centred on its
    height (crest art is 1192×1328, so its middle sits at 0.557 of the logo width). */
@@ -528,6 +548,8 @@ export function NinaroHome() {
   // The 3D wordmark replaces the flat one once it has drawn its first frame.
   const [logo3dReady, setLogo3dReady] = useState(false)
   const onLogo3dReady = useCallback(() => setLogo3dReady(true), [])
+  const [icons3dReady, setIcons3dReady] = useState(false)
+  const onIcons3dReady = useCallback(() => setIcons3dReady(true), [])
   const heroRef = useRef<HTMLElement | null>(null)
   // Crest aim: unit vector from the crest's centre to the hovered label's centre.
   const crestRef = useRef<HTMLDivElement | null>(null)
@@ -544,6 +566,24 @@ export function NinaroHome() {
   const at = (t: number) => `${(loadDelay + t).toFixed(2)}s`
   // Logo hover (Play reveal, wing fade) holds off until the sequence has played out.
   const [loaded, setLoaded] = useState(false)
+  // Play opens on the wordmark only (Play sits inside it); leaving closes it after
+  // PLAY_LINGER, cancelled if the cursor comes back in time.
+  const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const showPlay = useCallback(() => {
+    if (playTimer.current) clearTimeout(playTimer.current)
+    playTimer.current = null
+    if (loaded) setNear(true)
+  }, [loaded])
+  const hidePlay = useCallback(() => {
+    if (playTimer.current) clearTimeout(playTimer.current)
+    playTimer.current = setTimeout(() => setNear(false), PLAY_LINGER)
+  }, [])
+  useEffect(
+    () => () => {
+      if (playTimer.current) clearTimeout(playTimer.current)
+    },
+    [],
+  )
   const scrolled = useScrolled()
   // The hero's own logo covers the crest's job until most of the hero has scrolled away.
   const pastHero = useScrolled(() => window.innerHeight * 0.75)
@@ -917,7 +957,7 @@ export function NinaroHome() {
             style={{ animation: `nr-bar-in .9s ${EASE} ${at(LOAD.bar)} both` }}
           >
             {/* Icon column, sized off the logo width to keep the design's proportion */}
-            <span ref={iconsRef} className="block" aria-hidden="true">
+            <span ref={iconsRef} className="relative block" aria-hidden="true">
               <Image
                 src={ART.menuIcons}
                 alt=""
@@ -927,9 +967,14 @@ export function NinaroHome() {
                 style={{
                   width: navIconWidth(scrolled),
                   transform: `scale(${(1 + iconNear * ICON_GROW).toFixed(3)})`,
-                  transition: `width ${NAV_TRANSITION}, transform .5s ${EASE}`,
+                  opacity: icons3dReady ? 0 : 1,
+                  transition: `width ${NAV_TRANSITION}, transform .5s ${EASE}, opacity .6s ease`,
                 }}
               />
+              {/* 3D icons over the flat ones; scaled (never resized) to track the compact bar. */}
+              <span className="block" style={navIconOverlay(scrolled, 1 + iconNear * ICON_GROW)}>
+                <MenuIcons3D visible={icons3dReady} shadow={SHADOW.icons} onReady={onIcons3dReady} />
+              </span>
             </span>
           </button>
 
@@ -945,10 +990,8 @@ export function NinaroHome() {
           </a>
         </div>
 
-        {/* Centre cluster — hovering it reveals the game entry */}
+        {/* Centre cluster — hovering the wordmark reveals the game entry beside it */}
         <div
-          onMouseEnter={() => loaded && setNear(true)}
-          onMouseLeave={() => setNear(false)}
           className="relative z-20 flex items-center py-10"
           style={{
             gap: 'clamp(24px, 5vw, 76px)',
@@ -957,43 +1000,6 @@ export function NinaroHome() {
             transition: 'opacity .5s ease',
           }}
         >
-          {/* Game entry — the game itself is a later phase, so this goes nowhere yet */}
-          <a
-            href="#game"
-            onClick={(e) => e.preventDefault()}
-            aria-label="Enter the game"
-            aria-hidden={!near}
-            tabIndex={near ? 0 : -1}
-            className="flex flex-col items-center gap-2.5 w-16 no-underline"
-            style={{
-              opacity: near ? 1 : 0,
-              transform: near ? 'translateY(0)' : 'translateY(10px)',
-              pointerEvents: near ? 'auto' : 'none',
-              transition: `opacity .55s ease, transform .7s ${EASE}`,
-            }}
-          >
-            <Image
-              src={ART.playIcons}
-              alt=""
-              width={78}
-              height={247}
-              className="block h-auto"
-              style={{ width: ICON_COL_W }}
-            />
-            <span
-              style={{
-                fontFamily: 'var(--font-sans)',
-                fontWeight: 400,
-                fontSize: '17px',
-                letterSpacing: '.08em',
-                color: MUTED,
-                writingMode: 'vertical-rl',
-              }}
-            >
-              Play
-            </span>
-          </a>
-
           {/* Logo block */}
           <div
             ref={logoRef}
@@ -1013,7 +1019,7 @@ export function NinaroHome() {
             >
               {/* Each wing can be picked up and springs home on release. The drag lives on
                   a wrapper so it never meets the unfurl animation on the image. */}
-              <div style={{ ...WING, right: WING_GAP }}>
+              <div style={{ ...WING, right: WING_GAP, filter: SHADOW.wings, transition: SHADOW_EASE }}>
                 <DragArt src={ART.wingLeft} enabled={canDrag} calm={reducedMotion} returnHome onHot={onLeftWingHot}>
                   <Image
                     src={ART.wingLeft}
@@ -1027,7 +1033,7 @@ export function NinaroHome() {
                   />
                 </DragArt>
               </div>
-              <div style={{ ...WING, left: WING_GAP }}>
+              <div style={{ ...WING, left: WING_GAP, filter: SHADOW.wings, transition: SHADOW_EASE }}>
                 <DragArt src={ART.wingRight} enabled={canDrag} calm={reducedMotion} returnHome onHot={onRightWingHot}>
                   <Image
                     src={ART.wingRight}
@@ -1080,7 +1086,8 @@ export function NinaroHome() {
                       `rotateX(${(-aim.y * CREST_TILT * (reducedMotion ? CREST_REDUCED : 1) + glide.y * LOGO_TILT).toFixed(2)}deg) ` +
                       `rotateY(${(aim.x * CREST_TILT * (reducedMotion ? CREST_REDUCED : 1) - glide.x * LOGO_TILT).toFixed(2)}deg)`
                     : 'none',
-                  transition: `transform .8s ${EASE}`,
+                  filter: SHADOW.crest,
+                  transition: `transform .8s ${EASE}, ${SHADOW_EASE}`,
                 }}
               >
                 <Image
@@ -1127,8 +1134,52 @@ export function NinaroHome() {
               </div>
               <div
                 className="relative inline-block"
-                style={{ animation: `nr-fadeup 1s ${EASE} ${at(LOAD.wordmark)} both` }}
+                // Play sits inside this wrapper, so hovering it counts as hovering the
+                // wordmark; the linger covers the small gap between the two.
+                onMouseEnter={showPlay}
+                onMouseLeave={hidePlay}
+                style={{ animation: `nr-fadeup 1s ${EASE} ${at(LOAD.wordmark)} both`, cursor: 'pointer' }}
               >
+                {/* Game entry — the game itself is a later phase, so this goes nowhere yet */}
+                <a
+                  href="#game"
+                  onClick={(e) => e.preventDefault()}
+                  aria-label="Enter the game"
+                  aria-hidden={!near}
+                  tabIndex={near ? 0 : -1}
+                  className="absolute top-1/2 z-[1] flex items-center gap-2.5 no-underline"
+                  style={{
+                    right: `calc(100% + ${PLAY_GAP})`,
+                    cursor: 'pointer',
+                    opacity: near ? 1 : 0,
+                    transform: near ? 'translateY(-50%)' : 'translateY(calc(-50% + 10px))',
+                    pointerEvents: near ? 'auto' : 'none',
+                    transition: `opacity .55s ease, transform .7s ${EASE}`,
+                  }}
+                >
+                  <span className="relative block shrink-0" style={{ width: PLAY_ROW_W, height: PLAY_ROW_H }}>
+                    <Image
+                      src={ART.playIcons}
+                      alt=""
+                      width={78}
+                      height={247}
+                      className="absolute left-1/2 top-1/2 block h-auto max-w-none"
+                      style={{ width: PLAY_ROW_H, transform: 'translate(-50%, -50%) rotate(-90deg)' }}
+                    />
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-sans)',
+                      fontWeight: 400,
+                      fontSize: PLAY_TEXT,
+                      letterSpacing: '.08em',
+                      color: MUTED,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Play
+                  </span>
+                </a>
                 <Image
                   src={ART.ninaro}
                   alt="NINARÒ"
@@ -1141,15 +1192,13 @@ export function NinaroHome() {
                 {/* Real-3D wordmark over the flat one; the PNG stays as the fallback (no
                     WebGL, reduced motion) and keeps the layout box either way. */}
                 {!reducedMotion && (
-                  <NinaroLogo3D glide={glide} drift={!canDrag} visible={logo3dReady} onReady={onLogo3dReady} />
+                  <NinaroLogo3D glide={glide} visible={logo3dReady} shadow={SHADOW.logo} onReady={onLogo3dReady} />
                 )}
               </div>
             </div>
             </div>
           </div>
 
-          {/* Mirrors the game entry so the logo stays optically centred */}
-          <span className="w-16" aria-hidden="true" />
         </div>
 
         {/* Scattered menu layer */}
