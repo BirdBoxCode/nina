@@ -4,9 +4,9 @@ import React, { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useIntro } from './IntroContext'
 
-// ninaro: 400×135 → displayed at 257px wide
+// ninaro: 1252×463 → displayed at 257px wide
 const NINA_W = 257
-const NINA_H = Math.round(NINA_W * (135 / 400)) // 87px
+const NINA_H = Math.round(NINA_W * (463 / 1252)) // 95px
 
 export function IntroOverlay() {
   const { showContent, setCursorOverride } = useIntro()
