@@ -1,6 +1,6 @@
 import { ArtGallery } from '@/components/ArtGallery'
-import { getByCategory } from '@/lib/artworks'
+import { getByCategory } from '@/lib/sanity/artworks'
 
-export default function MuralsPage() {
-  return <ArtGallery category="murals" pieces={getByCategory('murals')} />
+export default async function MuralsPage() {
+  return <ArtGallery category="murals" pieces={await getByCategory('murals')} />
 }

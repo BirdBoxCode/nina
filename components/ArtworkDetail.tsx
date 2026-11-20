@@ -58,6 +58,7 @@ export function ArtworkDetail({
           priority
           sizes="(max-width: 768px) 100vw, 50vw"
           className={piece.fit === 'cover' ? 'object-cover' : 'object-contain p-6 md:p-12'}
+          style={{ objectPosition: piece.objectPosition }}
         />
       </motion.div>
 

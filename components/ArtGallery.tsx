@@ -83,6 +83,7 @@ function CarouselTile({
                 ? 'object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.04]'
                 : 'object-contain p-10 transition-transform duration-[900ms] ease-out group-hover:scale-[1.04]'
             }
+            style={{ objectPosition: slot.piece.objectPosition }}
           />
           <div className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/10" />
         </>
