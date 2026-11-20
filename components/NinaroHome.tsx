@@ -2,8 +2,25 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
+import { createPortal } from 'react-dom'
+import { animate, motion, useDragControls, useMotionValue } from 'framer-motion'
 import { TransitionLink, useTransitionCovered, REVEAL_CLEAR_DELAY } from '@/components/PageTransition'
 import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconWidth, useScrolled } from '@/components/SideNav'
+
+/* Real-3D wordmark; WebGL, so client only. The flat PNG holds the layout until it is drawn. */
+const NinaroLogo3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.NinaroLogo3D), {
+  ssr: false,
+})
+
+/* Cursor depth on the hero. Each layer shifts by its depth in px at the viewport edge:
+   positive follows the cursor (near), negative runs against it (far). Uses the standalone
+   `translate` property, which composes with each element's existing transform. */
+const depth = (px: number) => `calc(var(--nr-dx, 0) * ${px}px) calc(var(--nr-dy, 0) * ${px}px)`
+const DEPTH_EASE = 'translate .9s cubic-bezier(.2,.7,.2,1)'
+const DEPTH = { bar: 4, ghost: -24, wings: -10, logo: 8 }
+/* Menu labels sit at mixed depths (10–22px) so they part from one another in space. */
+const labelDepth = (i: number) => 10 + ((i * 5) % 13)
 
 /* --- Design tokens (Nocturne, run on a light paper ground) --- */
 const PAPER = '#EFEBE2'
@@ -117,6 +134,246 @@ const CREST_MASK: React.CSSProperties = {
 const GHOST_FILTER: React.CSSProperties = {
   filter: 'invert(1)',
   mixBlendMode: 'multiply',
+}
+
+/* Thrown background art may hang this share of itself past the section's edges. */
+const DRAG_OVERHANG = 0.6
+/* Opacity lift and scale while the art is hovered or held, so it reads as something to pick up. */
+const DRAG_LIFT = 2
+const DRAG_SCALE = 1.03
+/* Only the drawn lines are grabbable. The art's alpha is sampled into a map this wide, and a
+   press counts within this many screen px of a line so thin strokes are not fiddly. */
+const HIT_MAP_W = 256
+const HIT_TOLERANCE = 9
+const HIT_ALPHA = 24
+/* One loose wobble the first time the art scrolls into view: a hint it can be moved. */
+const WOBBLE = [0, -2.2, 1.6, -0.8, 0]
+
+/**
+ * Background art the visitor can pick up. Thrown art stays where it lands; with
+ * `returnHome` it springs back on release. Only its drawn lines take the pointer, and only
+ * where nothing else on the page sits above them.
+ */
+function DragArt({
+  src,
+  bounds,
+  enabled,
+  calm,
+  opacity,
+  hint,
+  returnHome,
+  onHot,
+  className,
+  children,
+}: {
+  /** The art's image, read for the line-only hit test. */
+  src: string
+  bounds?: React.RefObject<HTMLDivElement | null>
+  enabled: boolean
+  /** Reduced motion: no throw momentum, wobble or scale. */
+  calm: boolean
+  /** Resting opacity; omit when a parent owns it. */
+  opacity?: number
+  hint?: boolean
+  returnHome?: boolean
+  onHot?: (hot: boolean) => void
+  className?: string
+  children: React.ReactNode
+}) {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const labelRef = useRef<HTMLDivElement | null>(null)
+  const alpha = useRef<{ data: Uint8ClampedArray; w: number; h: number } | null>(null)
+  const heldRef = useRef(false)
+  const [hot, setHot] = useState(false)
+  const [held, setHeld] = useState(false)
+  const controls = useDragControls()
+  const rotate = useMotionValue(0)
+
+  useEffect(() => {
+    onHot?.(hot)
+  }, [hot, onHot])
+
+  // Alpha map for the hit test, read once per image.
+  useEffect(() => {
+    if (!enabled) return
+    let live = true
+    const img = new window.Image()
+    img.onload = () => {
+      if (!live) return
+      const w = HIT_MAP_W
+      const h = Math.max(1, Math.round((w * img.naturalHeight) / img.naturalWidth))
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      if (!ctx) return
+      ctx.drawImage(img, 0, 0, w, h)
+      alpha.current = { data: ctx.getImageData(0, 0, w, h).data, w, h }
+    }
+    img.src = src
+    return () => {
+      live = false
+    }
+  }, [enabled, src])
+
+  // Hover is tracked from the window, not the element: its box is mostly empty space, and
+  // it only takes pointer events while the cursor is on a line.
+  useEffect(() => {
+    if (!enabled) return
+    let frame = 0
+    let last: { x: number; y: number } | null = null
+
+    const onLine = (x: number, y: number) => {
+      const el = ref.current
+      const map = alpha.current
+      if (!el || !map) return false
+      const r = el.getBoundingClientRect()
+      if (x < r.left - HIT_TOLERANCE || x > r.right + HIT_TOLERANCE) return false
+      if (y < r.top - HIT_TOLERANCE || y > r.bottom + HIT_TOLERANCE) return false
+      const mx = ((x - r.left) / r.width) * map.w
+      const my = ((y - r.top) / r.height) * map.h
+      const rad = Math.ceil((HIT_TOLERANCE * map.w) / r.width)
+      let found = false
+      for (let dy = -rad; dy <= rad && !found; dy++) {
+        for (let dx = -rad; dx <= rad; dx++) {
+          if (dx * dx + dy * dy > rad * rad) continue
+          const px = Math.round(mx + dx)
+          const py = Math.round(my + dy)
+          if (px < 0 || py < 0 || px >= map.w || py >= map.h) continue
+          if (map.data[(py * map.w + px) * 4 + 3] > HIT_ALPHA) {
+            found = true
+            break
+          }
+        }
+      }
+      if (!found) return false
+      // Covered by something else (a card, the heading): leave the pointer to it.
+      const top = document.elementFromPoint(x, y)
+      return !top || top.contains(el) || el.contains(top)
+    }
+
+    const update = () => {
+      frame = 0
+      if (!last) return
+      const label = labelRef.current
+      if (label) label.style.transform = `translate(${last.x + 16}px, ${last.y + 18}px)`
+      if (!heldRef.current) setHot(onLine(last.x, last.y))
+    }
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update)
+    }
+    const onMove = (e: PointerEvent) => {
+      last = { x: e.clientX, y: e.clientY }
+      schedule()
+    }
+    const onLeave = () => {
+      last = null
+      if (!heldRef.current) setHot(false)
+    }
+
+    window.addEventListener('pointermove', onMove, { passive: true })
+    window.addEventListener('scroll', schedule, { passive: true })
+    document.documentElement.addEventListener('pointerleave', onLeave)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('scroll', schedule)
+      document.documentElement.removeEventListener('pointerleave', onLeave)
+    }
+  }, [enabled])
+
+  // Wobble hint, once, when the art first comes into view.
+  useEffect(() => {
+    const el = ref.current
+    if (!hint || !enabled || calm || !el) return
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return
+        io.disconnect()
+        animate(rotate, WOBBLE, { duration: 0.9, ease: 'easeInOut', delay: 0.3 })
+      },
+      { threshold: 0.35 },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [hint, enabled, calm, rotate])
+
+  const lifted = enabled && (hot || held)
+
+  return (
+    <>
+      <motion.div
+        ref={ref}
+        className={className}
+        drag={enabled}
+        dragListener={false}
+        dragControls={controls}
+        dragConstraints={returnHome ? undefined : bounds}
+        dragElastic={0.12}
+        dragMomentum={!calm && !returnHome}
+        dragSnapToOrigin={returnHome}
+        dragTransition={returnHome ? { bounceStiffness: 260, bounceDamping: calm ? 40 : 14 } : undefined}
+        // The art is placed partly off-edge by design, so the section-box constraint is
+        // widened by DRAG_OVERHANG of its own size rather than snapping it fully inside.
+        onMeasureDragConstraints={(c) => {
+          const el = ref.current
+          if (!el) return
+          const w = el.offsetWidth * DRAG_OVERHANG
+          const h = el.offsetHeight * DRAG_OVERHANG
+          return { left: c.left - w, right: c.right + w, top: c.top - h, bottom: c.bottom + h }
+        }}
+        onPointerDown={(e) => {
+          if (hot) controls.start(e)
+        }}
+        onDragStart={() => {
+          heldRef.current = true
+          setHeld(true)
+        }}
+        onDragEnd={() => {
+          heldRef.current = false
+          setHeld(false)
+        }}
+        animate={{ scale: lifted && !calm ? DRAG_SCALE : 1 }}
+        transition={{ scale: { duration: 0.4, ease: [0.2, 0.7, 0.2, 1] } }}
+        style={{
+          rotate,
+          opacity: opacity === undefined ? undefined : lifted ? Math.min(1, opacity * DRAG_LIFT) : opacity,
+          transition: 'opacity .4s ease',
+          pointerEvents: lifted ? 'auto' : 'none',
+          cursor: lifted ? (held ? 'grabbing' : 'grab') : undefined,
+          touchAction: 'none',
+        }}
+      >
+        {children}
+      </motion.div>
+      {/* Cursor tag. Portalled: a fixed element inside the transformed art would be placed
+          against that transform rather than the viewport. */}
+      {enabled &&
+        createPortal(
+          <div
+            ref={labelRef}
+            aria-hidden="true"
+            className="pointer-events-none fixed left-0 top-0 z-[70]"
+            style={{ opacity: lifted ? 1 : 0, transition: 'opacity .25s ease' }}
+          >
+            <span
+              className="block rounded-full px-[10px] py-[3px]"
+              style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: '12px',
+                letterSpacing: '.08em',
+                color: INK,
+                background: PAPER,
+                border: `1px solid ${BORDER}`,
+              }}
+            >
+              Drag
+            </span>
+          </div>,
+          document.body,
+        )}
+    </>
+  )
 }
 
 /* marking-2 ships as black line art, unlike the rest of the set; it only needs the multiply. */
@@ -260,6 +517,18 @@ export function NinaroHome() {
   const workRef = useRef<HTMLElement | null>(null)
   const dragonRef = useRef<HTMLDivElement | null>(null)
   const swordRef = useRef<HTMLDivElement | null>(null)
+  // Clip layer for the work-section art; also the bounds the art can be thrown within.
+  const artLayerRef = useRef<HTMLDivElement | null>(null)
+  // Mouse/trackpad only: on touch a drag would fight the page scroll.
+  const [canDrag, setCanDrag] = useState(false)
+  // Hero wings brighten while one is under the cursor or held.
+  const [wingHot, setWingHot] = useState({ left: false, right: false })
+  const onLeftWingHot = useCallback((hot: boolean) => setWingHot((w) => (w.left === hot ? w : { ...w, left: hot })), [])
+  const onRightWingHot = useCallback((hot: boolean) => setWingHot((w) => (w.right === hot ? w : { ...w, right: hot })), [])
+  // The 3D wordmark replaces the flat one once it has drawn its first frame.
+  const [logo3dReady, setLogo3dReady] = useState(false)
+  const onLogo3dReady = useCallback(() => setLogo3dReady(true), [])
+  const heroRef = useRef<HTMLElement | null>(null)
   // Crest aim: unit vector from the crest's centre to the hovered label's centre.
   const crestRef = useRef<HTMLDivElement | null>(null)
   const sweepRef = useRef<HTMLDivElement | null>(null)
@@ -410,6 +679,41 @@ export function NinaroHome() {
     const len = Math.hypot(dx, dy) || 1
     setAim({ x: dx / len, y: dy / len })
   }
+
+  // Hero cursor depth: writes -1..1 to CSS variables on the hero (no re-render per move).
+  // Same gating as the logo tilt; past the hero the layers settle back to rest.
+  useEffect(() => {
+    if (!window.matchMedia('(hover: hover)').matches) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    let frame = 0
+    const onMove = (e: PointerEvent) => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        const hero = heroRef.current
+        if (!hero) return
+        const away = window.scrollY > window.innerHeight
+        const nx = away ? 0 : (e.clientX / window.innerWidth) * 2 - 1
+        const ny = away ? 0 : (e.clientY / window.innerHeight) * 2 - 1
+        hero.style.setProperty('--nr-dx', nx.toFixed(3))
+        hero.style.setProperty('--nr-dy', ny.toFixed(3))
+      })
+    }
+
+    window.addEventListener('pointermove', onMove, { passive: true })
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('pointermove', onMove)
+    }
+  }, [])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(hover: hover) and (pointer: fine)')
+    const sync = () => setCanDrag(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
 
   // Scroll parallax. Each layer's speed is relative to the page: 1 moves with it, 0 holds
   // still on screen. Transforms are written straight to the nodes once per frame.
@@ -588,14 +892,18 @@ export function NinaroHome() {
       />
 
       {/* ===== Hero ===== */}
-      <section className="relative flex items-center justify-center h-screen min-h-[560px]">
+      <section ref={heroRef} className="relative flex items-center justify-center h-screen min-h-[560px]">
         {/* Top bar — fixed; compacts onto a paper band once the page scrolls. The bar
             itself lets clicks through so its box never blocks the content below. */}
         <div
           // items-start: the menu icon column grows tall on desktop, so top-aligning
           // keeps TATTOO near the top rather than centred on the column.
           className="pointer-events-none fixed left-0 right-0 top-0 z-30 flex items-start justify-between px-[34px]"
-          style={{ paddingTop: navBarPad(scrolled), transition: `padding-top ${NAV_TRANSITION}` }}
+          style={{
+            paddingTop: navBarPad(scrolled),
+            translate: depth(DEPTH.bar),
+            transition: `padding-top ${NAV_TRANSITION}, ${DEPTH_EASE}`,
+          }}
         >
           <NavBand show={scrolled} />
           <NavCrest compact show={pastHero && !menuOpen} />
@@ -697,32 +1005,42 @@ export function NinaroHome() {
             <div ref={wingsParRef} style={{ willChange: 'transform' }}>
             <div
               aria-hidden="true"
-              style={{ opacity: menuOpen ? 0.2 : near ? 0.3 : 0.7, transition: 'opacity .5s ease' }}
+              style={{
+                opacity: wingHot.left || wingHot.right ? 0.9 : menuOpen ? 0.2 : near ? 0.3 : 0.7,
+                translate: depth(DEPTH.wings),
+                transition: `opacity .5s ease, ${DEPTH_EASE}`,
+              }}
             >
-              <Image
-                src={ART.wingLeft}
-                alt=""
-                width={1009}
-                height={355}
-                priority
-                style={{
-                  ...WING,
-                  right: WING_GAP,
-                  animation: `nr-unfurl-left 1.4s ${UNFURL_EASE} ${at(LOAD.wings)} both`,
-                }}
-              />
-              <Image
-                src={ART.wingRight}
-                alt=""
-                width={1007}
-                height={353}
-                priority
-                style={{
-                  ...WING,
-                  left: WING_GAP,
-                  animation: `nr-unfurl-right 1.4s ${UNFURL_EASE} ${at(LOAD.wings + LOAD.wingStagger)} both`,
-                }}
-              />
+              {/* Each wing can be picked up and springs home on release. The drag lives on
+                  a wrapper so it never meets the unfurl animation on the image. */}
+              <div style={{ ...WING, right: WING_GAP }}>
+                <DragArt src={ART.wingLeft} enabled={canDrag} calm={reducedMotion} returnHome onHot={onLeftWingHot}>
+                  <Image
+                    src={ART.wingLeft}
+                    alt=""
+                    width={1009}
+                    height={355}
+                    priority
+                    draggable={false}
+                    className="block h-auto w-full"
+                    style={{ animation: `nr-unfurl-left 1.4s ${UNFURL_EASE} ${at(LOAD.wings)} both` }}
+                  />
+                </DragArt>
+              </div>
+              <div style={{ ...WING, left: WING_GAP }}>
+                <DragArt src={ART.wingRight} enabled={canDrag} calm={reducedMotion} returnHome onHot={onRightWingHot}>
+                  <Image
+                    src={ART.wingRight}
+                    alt=""
+                    width={1007}
+                    height={353}
+                    priority
+                    draggable={false}
+                    className="block h-auto w-full"
+                    style={{ animation: `nr-unfurl-right 1.4s ${UNFURL_EASE} ${at(LOAD.wings + LOAD.wingStagger)} both` }}
+                  />
+                </DragArt>
+              </div>
             </div>
             </div>
             {/* Logo parallax — runs a touch ahead of the page so it pulls away from the wings */}
@@ -735,7 +1053,8 @@ export function NinaroHome() {
                   `perspective(900px) ` +
                   `rotateX(${(-glide.y * LOGO_TILT).toFixed(2)}deg) ` +
                   `rotateY(${(glide.x * LOGO_TILT).toFixed(2)}deg)`,
-                transition: `transform .5s ${EASE}`,
+                translate: depth(DEPTH.logo),
+                transition: `transform .5s ${EASE}, ${DEPTH_EASE}`,
                 willChange: 'transform',
               }}
             >
@@ -817,58 +1136,13 @@ export function NinaroHome() {
                   height={463}
                   priority
                   className="block h-auto"
-                  style={{ width: LOGO_W }}
+                  style={{ width: LOGO_W, opacity: logo3dReady ? 0 : 1, transition: 'opacity .6s ease' }}
                 />
-                {/* Sheen. Masked by the wordmark itself, so the light falls on the
-                    letterforms rather than in a rectangle around them. */}
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0"
-                  style={{
-                    // Geometry fixed, placement moved: `circle at x% y%` lives inside
-                    // background-image and cannot transition, background-position can —
-                    // so the light trails the cursor on the same .5s as the drift.
-                    backgroundImage:
-                      'radial-gradient(circle, rgba(255,255,255,.45), rgba(255,255,255,0) 55%)',
-                    backgroundSize: '170% 170%',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: `${(50 + glide.x * 50).toFixed(1)}% ${(50 + glide.y * 50).toFixed(1)}%`,
-                    WebkitMaskImage: `url(${ART.ninaro})`,
-                    maskImage: `url(${ART.ninaro})`,
-                    WebkitMaskSize: 'contain',
-                    maskSize: 'contain',
-                    WebkitMaskRepeat: 'no-repeat',
-                    maskRepeat: 'no-repeat',
-                    WebkitMaskPosition: 'center',
-                    maskPosition: 'center',
-                    mixBlendMode: 'screen',
-                    transition: `background-position .5s ${EASE}`,
-                    willChange: 'background-position',
-                  }}
-                />
-                {/* Load light pass — one band of light crosses the letters as they land */}
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0"
-                  style={{
-                    backgroundImage:
-                      'linear-gradient(105deg, rgba(255,255,255,0) 38%, rgba(255,255,255,.6) 50%, rgba(255,255,255,0) 62%)',
-                    backgroundSize: '250% 100%',
-                    backgroundRepeat: 'no-repeat',
-                    WebkitMaskImage: `url(${ART.ninaro})`,
-                    maskImage: `url(${ART.ninaro})`,
-                    WebkitMaskSize: 'contain',
-                    maskSize: 'contain',
-                    WebkitMaskRepeat: 'no-repeat',
-                    maskRepeat: 'no-repeat',
-                    WebkitMaskPosition: 'center',
-                    maskPosition: 'center',
-                    mixBlendMode: 'screen',
-                    // Resting state is off, so with animations disabled (reduced motion) it never shows.
-                    opacity: 0,
-                    animation: `nr-sheen-pass 1.1s ease-in-out ${at(LOAD.sheen)} both`,
-                  }}
-                />
+                {/* Real-3D wordmark over the flat one; the PNG stays as the fallback (no
+                    WebGL, reduced motion) and keeps the layout box either way. */}
+                {!reducedMotion && (
+                  <NinaroLogo3D glide={glide} drift={!canDrag} visible={logo3dReady} onReady={onLogo3dReady} />
+                )}
               </div>
             </div>
             </div>
@@ -910,7 +1184,8 @@ export function NinaroHome() {
               backgroundPosition: ghostBox ? 'center bottom' : 'center',
               backgroundSize: 'contain',
               opacity: menuOpen && hover !== null ? 0.3 : 0,
-              transition: `opacity .8s ease, transform 1.2s ${EASE}`,
+              translate: depth(DEPTH.ghost),
+              transition: `opacity .8s ease, transform 1.2s ${EASE}, ${DEPTH_EASE}`,
               ...(ghostDark ? { mixBlendMode: 'multiply' as const } : GHOST_FILTER),
             }}
           />
@@ -938,7 +1213,8 @@ export function NinaroHome() {
               transition:
                 `opacity .7s ${EASE} ${i * MENU_STAGGER}ms, ` +
                 `transform .9s ${EASE} ${i * MENU_STAGGER}ms, ` +
-                `color .4s ease, letter-spacing .4s ease`,
+                `color .4s ease, letter-spacing .4s ease, ${DEPTH_EASE}`,
+              translate: depth(labelDepth(i)),
             }
             const shared = {
               style,
@@ -994,6 +1270,7 @@ export function NinaroHome() {
         {/* Background illustrations — full-bleed past the section's max width, clipped to
             its height, each drifting at its own speed (see the parallax effect). */}
         <div
+          ref={artLayerRef}
           aria-hidden="true"
           className="pointer-events-none absolute top-0 bottom-0 left-1/2 z-[-1] w-screen -translate-x-1/2 overflow-hidden"
           // Soft top edge: art meeting the clip fades into the paper instead of a hard cut.
@@ -1005,16 +1282,22 @@ export function NinaroHome() {
           <div
             ref={dragonRef}
             className="absolute"
-            style={{ top: 'clamp(40px, 6vw, 110px)', left: '-4vw', width: '40vw', opacity: 0.14, willChange: 'transform' }}
+            style={{ top: 'clamp(40px, 6vw, 110px)', left: '-4vw', width: '40vw', willChange: 'transform' }}
           >
-            <Image src={ART.dragon} alt="" width={1200} height={698} className="block h-auto w-full" style={GHOST_FILTER} />
+            {/* Drag sits inside the parallax node: the scroll effect writes that node's
+                transform directly, so the two offsets add instead of overwriting. */}
+            <DragArt src={ART.dragon} bounds={artLayerRef} enabled={canDrag} calm={reducedMotion} opacity={0.14} hint>
+              <Image src={ART.dragon} alt="" width={1200} height={698} draggable={false} className="block h-auto w-full" style={GHOST_FILTER} />
+            </DragArt>
           </div>
           <div
             ref={swordRef}
             className="absolute top-0"
-            style={{ right: '-4vw', height: narrow ? '60vh' : '90vh', opacity: 0.16, willChange: 'transform' }}
+            style={{ right: '-4vw', height: narrow ? '60vh' : '90vh', willChange: 'transform' }}
           >
-            <Image src={ART.sword} alt="" width={494} height={1200} className="block h-full w-auto" style={GHOST_FILTER} />
+            <DragArt src={ART.sword} bounds={artLayerRef} enabled={canDrag} calm={reducedMotion} opacity={0.16} hint className="h-full">
+              <Image src={ART.sword} alt="" width={494} height={1200} draggable={false} className="block h-full w-auto" style={GHOST_FILTER} />
+            </DragArt>
           </div>
         </div>
 
