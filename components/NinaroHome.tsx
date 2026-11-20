@@ -16,6 +16,11 @@ const NinaroLogo3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) 
 const MenuIcons3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.MenuIcons3D), {
   ssr: false,
 })
+const Crest3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.Crest3D), {
+  ssr: false,
+})
+/* Trial: the hero crest in 3D. false puts the flat crest back. */
+const CREST_3D = true
 
 /* Cursor depth on the hero. Each layer shifts by its depth in px at the viewport edge:
    positive follows the cursor (near), negative runs against it (far). Uses the standalone
@@ -550,6 +555,8 @@ export function NinaroHome() {
   const onLogo3dReady = useCallback(() => setLogo3dReady(true), [])
   const [icons3dReady, setIcons3dReady] = useState(false)
   const onIcons3dReady = useCallback(() => setIcons3dReady(true), [])
+  const [crest3dReady, setCrest3dReady] = useState(false)
+  const onCrest3dReady = useCallback(() => setCrest3dReady(true), [])
   const heroRef = useRef<HTMLElement | null>(null)
   // Crest aim: unit vector from the crest's centre to the hovered label's centre.
   const crestRef = useRef<HTMLDivElement | null>(null)
@@ -1097,7 +1104,13 @@ export function NinaroHome() {
                   height={1328}
                   priority
                   className="block h-auto w-full"
+                  style={{ opacity: CREST_3D && crest3dReady ? 0 : 1, transition: 'opacity .6s ease' }}
                 />
+                {/* 3D crest over the flat one, inside the aim plane and under the crest's
+                    shadow; the PNG keeps the layout box and stays as the fallback. */}
+                {CREST_3D && !reducedMotion && (
+                  <Crest3D glide={glide} visible={crest3dReady} onReady={onCrest3dReady} />
+                )}
                 {/* Light on the side facing the label. Masked by the crest itself, like
                     the wordmark sheen, so it falls on the artwork, not a box around it. */}
                 <div

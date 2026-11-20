@@ -28,7 +28,8 @@ type Extrusion = {
   depth: number
   bevelThickness: number
   bevelSize: number
-  /** Side wall colour, a shade under the painted face so the edge reads. */
+  /** Side wall colour, a shade under the painted face so the edge reads; or 'art' to take
+      the artwork's own colour at the outline, dimmed, for multi-coloured art. */
   side: string
   /** Turn toward the cursor, in radians at full glide. */
   turn: number
@@ -45,6 +46,21 @@ const WORDMARK: Extrusion = {
   bevelSize: 2.4,
   side: '#9da0d6',
   turn: 0.2,
+}
+
+/* Traced at the crest's stroke opacity. Thin body and a very small bevel: the stems that
+   cross in the middle are only a few units wide. A gentle turn, since the crest already
+   aims at hovered menu labels and tilts with the logo plane. */
+const CREST: Extrusion = {
+  art: '/images/assets/opera-senza.png',
+  outline: '/images/assets/opera-senza-outline.svg',
+  w: 1192,
+  h: 1328,
+  depth: 28,
+  bevelThickness: 8,
+  bevelSize: 1.5,
+  side: 'art',
+  turn: 0.12,
 }
 
 /* Traced at 4× the 77×247 PNG, one path per flower (top to bottom). */
@@ -127,12 +143,23 @@ function Extruded({
       clearcoat: 1,
       clearcoatRoughness: 0.32,
     })
-    const side = new THREE.MeshPhysicalMaterial({
-      color: spec.side,
-      roughness: 0.45,
-      clearcoat: 1,
-      clearcoatRoughness: 0.2,
-    })
+    const side =
+      spec.side === 'art'
+        ? new THREE.MeshPhysicalMaterial({
+            color: 0x000000,
+            emissive: 0xffffff,
+            emissiveMap: map,
+            emissiveIntensity: 0.6,
+            roughness: 0.45,
+            clearcoat: 1,
+            clearcoatRoughness: 0.2,
+          })
+        : new THREE.MeshPhysicalMaterial({
+            color: spec.side,
+            roughness: 0.45,
+            clearcoat: 1,
+            clearcoatRoughness: 0.2,
+          })
     return [face, side]
   }, [map, spec])
 
@@ -313,6 +340,11 @@ export function NinaroLogo3D(props: {
   onReady: () => void
 }) {
   return <Extruded3D spec={WORDMARK} {...props} />
+}
+
+/** Opera Senza crest in 3D. */
+export function Crest3D(props: { glide: Glide; visible: boolean; shadow?: string; onReady: () => void }) {
+  return <Extruded3D spec={CREST} {...props} />
 }
 
 /** The three-flower menu icon column in 3D; each flower turns on its own. */
