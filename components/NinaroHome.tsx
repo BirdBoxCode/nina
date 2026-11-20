@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
-import { createPortal } from 'react-dom'
 import { animate, motion, useDragControls, useMotionValue } from 'framer-motion'
 import { TransitionLink, useTransitionCovered, REVEAL_CLEAR_DELAY } from '@/components/PageTransition'
 import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconOverlay, navIconWidth, useScrolled } from '@/components/SideNav'
@@ -218,7 +217,6 @@ function DragArt({
   children: React.ReactNode
 }) {
   const ref = useRef<HTMLDivElement | null>(null)
-  const labelRef = useRef<HTMLDivElement | null>(null)
   const alpha = useRef<{ data: Uint8ClampedArray; w: number; h: number } | null>(null)
   const heldRef = useRef(false)
   const [hot, setHot] = useState(false)
@@ -303,8 +301,6 @@ function DragArt({
     const update = () => {
       frame = 0
       if (!last) return
-      const label = labelRef.current
-      if (label) label.style.transform = `translate(${last.x + 16}px, ${last.y + 18}px)`
       if (!heldRef.current) setHot(onLine(last.x, last.y))
     }
     const schedule = () => {
@@ -422,32 +418,6 @@ function DragArt({
       >
         {children}
       </motion.div>
-      {/* Cursor tag. Portalled: a fixed element inside the transformed art would be placed
-          against that transform rather than the viewport. */}
-      {enabled &&
-        createPortal(
-          <div
-            ref={labelRef}
-            aria-hidden="true"
-            className="pointer-events-none fixed left-0 top-0 z-[70]"
-            style={{ opacity: lifted ? 1 : 0, transition: 'opacity .25s ease' }}
-          >
-            <span
-              className="block rounded-full px-[10px] py-[3px]"
-              style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: '12px',
-                letterSpacing: '.08em',
-                color: INK,
-                background: PAPER,
-                border: `1px solid ${BORDER}`,
-              }}
-            >
-              Drag
-            </span>
-          </div>,
-          document.body,
-        )}
     </>
   )
 }
