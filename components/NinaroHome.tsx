@@ -6,17 +6,15 @@ import dynamic from 'next/dynamic'
 import type { SelectedWork } from '@/lib/sanity/queries'
 import { animate, motion, useDragControls, useMotionValue } from 'framer-motion'
 import { TransitionLink, useTransitionCovered, REVEAL_CLEAR_DELAY } from '@/components/PageTransition'
-import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconOverlay, navIconWidth, useScrolled } from '@/components/SideNav'
+import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconWidth, useScrolled } from '@/components/SideNav'
 import { liftShadow } from '@/lib/utils'
 import { PALETTE, PLANES } from '@/lib/palette'
 import { HomeIntro, useIntroOnce, type IntroLayout } from '@/components/HomeIntro'
 import { InkArt } from '@/components/InkArt'
+import { FlowerIcon, FlowerStrip } from '@/components/FlowerIcon'
 
 /* Real-3D wordmark; WebGL, so client only. The flat PNG holds the layout until it is drawn. */
 const NinaroLogo3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.NinaroLogo3D), {
-  ssr: false,
-})
-const MenuIcons3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.MenuIcons3D), {
   ssr: false,
 })
 const Crest3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.Crest3D), {
@@ -34,7 +32,6 @@ const DEPTH = { bar: 4, ghost: -24, wings: -10, logo: 8 }
 /* Shadows on the paper, by height: the higher the layer, the longer and softer its shadow
    and the further it slides from the cursor, so the layers visibly part. */
 const SHADOW = {
-  icons: liftShadow(1, 2.5, 2.5, 4, 0.4),
   wings: liftShadow(2, 4, 4, 6, 0.22),
   crest: liftShadow(3, 8, 10, 12, 0.3),
   logo: liftShadow(2, 5, 5, 14, 0.42),
@@ -63,10 +60,7 @@ const ART = {
   ninaro: '/images/assets/ninaro.png',
   ornament: '/images/assets/opera-senza.png',
   icon1: '/images/assets/icons/icon 1.png',
-  icon2: '/images/assets/icons/icon 2.png',
   icon3: '/images/assets/icons/icon 3.png',
-  menuIcons: '/images/assets/icons/purple-icons.png',
-  playIcons: '/images/assets/icons/green-icons.png',
 }
 
 /* Vector line art (Paper, "SVG Frame"), coloured by CSS. Preferred over the PNGs above. */
@@ -860,20 +854,19 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   const [canDrag, setCanDrag] = useState(false)
   // Hero wings brighten while one is under the cursor or held.
   const [wingHot, setWingHot] = useState({ left: false, right: false })
+  // The Tattoo flower blooms while its link is hovered or focused.
+  const [tattooHot, setTattooHot] = useState(false)
   const onLeftWingHot = useCallback((hot: boolean) => setWingHot((w) => (w.left === hot ? w : { ...w, left: hot })), [])
   const onRightWingHot = useCallback((hot: boolean) => setWingHot((w) => (w.right === hot ? w : { ...w, right: hot })), [])
   // The 3D wordmark replaces the flat one once it has drawn its first frame.
   const [logo3dReady, setLogo3dReady] = useState(false)
   const onLogo3dReady = useCallback(() => setLogo3dReady(true), [])
-  const [icons3dReady, setIcons3dReady] = useState(false)
-  const onIcons3dReady = useCallback(() => setIcons3dReady(true), [])
   const [crest3dReady, setCrest3dReady] = useState(false)
   const onCrest3dReady = useCallback(() => setCrest3dReady(true), [])
   // A 3D piece whose context was dropped shows its flat art until it has rebuilt. Kept
   // apart from the ready flags so the build chain (and what it has mounted) is untouched.
   const [crest3dLost, setCrest3dLost] = useState(false)
   const [logo3dLost, setLogo3dLost] = useState(false)
-  const [icons3dLost, setIcons3dLost] = useState(false)
   const heroRef = useRef<HTMLElement | null>(null)
   // Crest aim: unit vector from the crest's centre to the hovered label's centre.
   const crestRef = useRef<HTMLDivElement | null>(null)
@@ -897,17 +890,14 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   const nameRef = useRef<HTMLHeadingElement | null>(null)
   const rolesRef = useRef<HTMLParagraphElement | null>(null)
   const [fontsReady, setFontsReady] = useState(false)
-  // The 3D pieces build one after another (crest, wordmark, menu icons), so no single
+  // The 3D pieces build one after another (crest, then wordmark), so no single
   // main-thread stall is long; each waits for the one before, or moves on if it is late.
   const [crestLate, setCrestLate] = useState(false)
   const [logoLate, setLogoLate] = useState(false)
-  const [iconsLate, setIconsLate] = useState(false)
   const crestSettled = !CREST_3D || reducedMotion || crest3dReady || crestLate
   const logoGo = crestSettled
   const logoSettled = reducedMotion || logo3dReady || logoLate
-  const iconsGo = logoSettled
-  const iconsSettled = icons3dReady || iconsLate
-  const introProgress = [fontsReady, crestSettled, logoSettled, iconsSettled].filter(Boolean).length / 4
+  const introProgress = [fontsReady, crestSettled, logoSettled].filter(Boolean).length / 3
   // Play opens on the wordmark only (Play sits inside it); leaving closes it after
   // PLAY_LINGER, cancelled if the cursor comes back in time.
   const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -1163,11 +1153,6 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
     const id = setTimeout(() => setLogoLate(true), BUILD_LATE)
     return () => clearTimeout(id)
   }, [logoGo])
-  useEffect(() => {
-    if (!iconsGo) return
-    const id = setTimeout(() => setIconsLate(true), BUILD_LATE)
-    return () => clearTimeout(id)
-  }, [iconsGo])
 
   // Where the intro lays its crest imprint and name: over the hero's own, at rest. The
   // crest's entrance holds it lifted and scaled, so its box comes from layout sizes and
@@ -1375,23 +1360,15 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
           >
             {/* Icon column, sized off the logo width to keep the design's proportion */}
             <span ref={iconsRef} className="relative block" aria-hidden="true">
-              <Image
-                src={ART.menuIcons}
-                alt=""
-                width={77}
-                height={247}
-                className="block h-auto"
+              <FlowerStrip
+                variant="purple"
+                state={menuOpen ? 'open' : 'closed'}
                 style={{
                   width: navIconWidth(scrolled),
                   transform: `scale(${(1 + iconNear * ICON_GROW).toFixed(3)})`,
-                  opacity: icons3dReady && !icons3dLost ? 0 : 1,
-                  transition: `width ${NAV_TRANSITION}, transform .5s ${EASE}, opacity .6s ease`,
+                  transition: `width ${NAV_TRANSITION}, transform .5s ${EASE}`,
                 }}
               />
-              {/* 3D icons over the flat ones; scaled (never resized) to track the compact bar. */}
-              <span className="block" style={navIconOverlay(scrolled, 1 + iconNear * ICON_GROW)}>
-                {iconsGo && <MenuIcons3D visible={icons3dReady} shadow={SHADOW.icons} onReady={onIcons3dReady} onLost={setIcons3dLost} />}
-              </span>
             </span>
           </button>
 
@@ -1401,9 +1378,15 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             rel="noopener"
             className="pointer-events-auto relative flex items-center gap-3 p-1.5"
             style={{ animation: `nr-bar-in .9s ${EASE} ${at(LOAD.bar + 0.08)} both` }}
+            onPointerEnter={() => setTattooHot(true)}
+            onPointerLeave={() => setTattooHot(false)}
+            onFocus={() => setTattooHot(true)}
+            onBlur={() => setTattooHot(false)}
           >
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '18px', color: MUTED }}>Tattoo</span>
-            <Image src={ART.icon2} alt="" width={26} height={26} className="w-[26px] h-[26px]" aria-hidden="true" />
+            <span className="block w-[26px]" aria-hidden="true">
+              <FlowerIcon variant="purple" index={1} state={tattooHot ? 'hover' : 'closed'} />
+            </span>
           </a>
         </div>
 
@@ -1637,12 +1620,10 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                   }}
                 >
                   <span className="relative block shrink-0" style={{ width: PLAY_ROW_W, height: PLAY_ROW_H }}>
-                    <Image
-                      src={ART.playIcons}
-                      alt=""
-                      width={78}
-                      height={247}
-                      className="absolute left-1/2 top-1/2 block h-auto max-w-none"
+                    <FlowerStrip
+                      variant="green"
+                      state={near ? 'playing' : 'closed'}
+                      className="absolute left-1/2 top-1/2 max-w-none"
                       style={{ width: PLAY_ROW_H, transform: 'translate(-50%, -50%) rotate(-90deg)' }}
                     />
                   </span>

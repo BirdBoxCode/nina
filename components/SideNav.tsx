@@ -1,19 +1,11 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import { TransitionLink } from '@/components/PageTransition'
-import { liftShadow } from '@/lib/utils'
+import { FlowerStrip } from '@/components/FlowerIcon'
 import { PALETTE, PIGMENT } from '@/lib/palette'
-
-/* 3D menu icons (WebGL, client only); the flat PNG holds the layout until they are drawn. */
-const MenuIcons3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.MenuIcons3D), {
-  ssr: false,
-})
-/* Same lift as the home bar's icons; there is no hero cursor here, so it stays at rest. */
-const ICON_SHADOW = liftShadow(1, 2.5, 2.5, 4, 0.4)
 
 /* --- Tokens shared with the home page (NinaroHome) --- */
 export const PAPER = PALETTE.paper
@@ -22,7 +14,6 @@ const ACCENT = PALETTE.ink
 const PANEL = PIGMENT.sageMist
 const EASE = 'cubic-bezier(.2,.7,.2,1)'
 
-const ICONS = '/images/assets/icons/purple-icons.png'
 const NINARO = '/images/assets/ninaro.png'
 const CREST = '/images/assets/opera-senza.png'
 
@@ -81,28 +72,6 @@ export function useScrolled(px: number | (() => number) = 40) {
 export const navBarPad = (compact: boolean) => (compact ? 14 : 30)
 export const navIconWidth = (compact: boolean) => (compact ? ICON_W_COMPACT : ICON_W)
 export const NAV_TRANSITION = `.5s ${EASE}`
-
-/**
- * 3D icon layer over the flat column. It holds the resting size and is scaled down for the
- * compact bar rather than resized: a WebGL canvas cannot follow a width transition (it
- * re-measures and redraws, so it lags, clips, then jumps). Grow is about the column's
- * centre, as on the flat image, and both run on the bar's timing so the two stay matched.
- */
-export function navIconOverlay(compact: boolean, grow: number): React.CSSProperties {
-  const s = compact ? 0.5 : 1
-  const shift = ((1 - grow) * s * 50).toFixed(3)
-  return {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: ICON_W,
-    aspectRatio: '77 / 247',
-    pointerEvents: 'none',
-    transformOrigin: '0 0',
-    transform: `translate(${shift}%, ${shift}%) scale(${(s * grow).toFixed(3)})`,
-    transition: `transform ${NAV_TRANSITION}`,
-  }
-}
 
 /**
  * Paper band behind the fixed bar. Slightly see-through with a soft blur, and masked
@@ -225,11 +194,6 @@ export function SideNav() {
     }
   }, [open])
 
-  const [icons3dReady, setIcons3dReady] = useState(false)
-  const onIcons3dReady = useCallback(() => setIcons3dReady(true), [])
-  // Flat icons return while a dropped 3D context rebuilds.
-  const [icons3dLost, setIcons3dLost] = useState(false)
-
   const linkStyle = (active: boolean, i: number): React.CSSProperties => ({
     fontFamily: 'var(--font-display)',
     fontWeight: 500,
@@ -268,23 +232,15 @@ export function SideNav() {
           style={{ animation: 'nr-fadeup 1s ease .2s both' }}
         >
           <span ref={iconsRef} className="relative block" aria-hidden="true">
-            <Image
-              src={ICONS}
-              alt=""
-              width={77}
-              height={247}
-              className="block h-auto"
+            <FlowerStrip
+              variant="purple"
+              state={open ? 'open' : 'closed'}
               style={{
                 width: navIconWidth(scrolled),
                 transform: `scale(${(1 + near * ICON_GROW).toFixed(3)})`,
-                opacity: icons3dReady && !icons3dLost ? 0 : 1,
-                transition: `width ${NAV_TRANSITION}, transform ${NAV_TRANSITION}, opacity .6s ease`,
+                transition: `width ${NAV_TRANSITION}, transform ${NAV_TRANSITION}`,
               }}
             />
-            {/* 3D icons over the flat ones; scaled (never resized) to track the compact bar. */}
-            <span className="block" style={navIconOverlay(scrolled, 1 + near * ICON_GROW)}>
-              <MenuIcons3D visible={icons3dReady} shadow={ICON_SHADOW} onReady={onIcons3dReady} onLost={setIcons3dLost} />
-            </span>
           </span>
         </button>
       </div>
