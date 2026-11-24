@@ -35,7 +35,7 @@ export const INK_RGB = '58, 54, 49'
  *   cursor: px shift at the viewport edge; negative runs against the cursor
  */
 export const PLANES = {
-  far: { alpha: 0.08, scroll: 0.35, cursor: -24 },
+  far: { alpha: 0.07, scroll: 0.35, cursor: -24 },
   mid: { alpha: 0.42, scroll: 0.6, cursor: -14 },
   near: { alpha: 1, scroll: 0.6, cursor: -10 },
 } as const

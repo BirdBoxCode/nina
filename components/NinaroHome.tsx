@@ -8,7 +8,7 @@ import { animate, motion, useDragControls, useMotionValue } from 'framer-motion'
 import { TransitionLink, useTransitionCovered, REVEAL_CLEAR_DELAY } from '@/components/PageTransition'
 import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconOverlay, navIconWidth, useScrolled } from '@/components/SideNav'
 import { liftShadow } from '@/lib/utils'
-import { PALETTE } from '@/lib/palette'
+import { PALETTE, PLANES } from '@/lib/palette'
 import { HomeIntro, useIntroOnce, type IntroLayout } from '@/components/HomeIntro'
 import { InkArt } from '@/components/InkArt'
 
@@ -853,6 +853,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   // Parallax layers, moved directly from a scroll frame (no re-render per frame).
   const logoParRef = useRef<HTMLDivElement | null>(null)
   const wingsParRef = useRef<HTMLDivElement | null>(null)
+  const echoParRef = useRef<HTMLDivElement | null>(null)
   const workRef = useRef<HTMLElement | null>(null)
   const dragonRef = useRef<HTMLDivElement | null>(null)
   const swordRef = useRef<HTMLDivElement | null>(null)
@@ -1118,6 +1119,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
       const hy = Math.min(window.scrollY, vh * 1.2)
       set(logoParRef.current, -hy * (PARALLAX.logo - 1) * soft)
       set(wingsParRef.current, hy * (1 - PARALLAX.wings) * soft)
+      set(echoParRef.current, hy * (1 - PLANES.far.scroll) * soft)
 
       // Selected work. A layer at speed s lags the page by (1 - s) of the distance
       // scrolled past its anchor: both are anchored to the section entering at the
@@ -1406,6 +1408,42 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '18px', color: MUTED }}>Tattoo</span>
             <Image src={ART.icon2} alt="" width={26} height={26} className="w-[26px] h-[26px]" aria-hidden="true" />
           </a>
+        </div>
+
+        {/* Far plane: a large, faint echo of the wings behind everything. It trails the page
+            and runs against the cursor harder than the wings do, so the layers part. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+          <div ref={echoParRef} className="absolute inset-0" style={{ willChange: 'transform' }}>
+            <div
+              className="absolute left-1/2 top-1/2 flex items-center"
+              style={{
+                gap: `calc(${LOGO_W} * 0.9)`,
+                transform: 'translate(-50%, -30%)',
+                translate: depth(PLANES.far.cursor),
+                transition: DEPTH_EASE,
+                color: INK,
+              }}
+            >
+              {[SVG.wingLeft, SVG.wingRight].map((w, i) => (
+                <div
+                  key={w.src}
+                  className="shrink-0"
+                  style={{
+                    width: `calc(${LOGO_W} * 3.4)`,
+                    opacity: menuOpen ? PLANES.far.alpha * 0.5 : PLANES.far.alpha,
+                    transform: `translateY(${i ? 14 : 4}%) rotate(${i ? -7 : 7}deg)`,
+                    // Out of focus, as a far layer should be. Static, so it rasterises once.
+                    filter: 'blur(1.4px)',
+                    transition: 'opacity .8s ease',
+                  }}
+                >
+                  <div style={{ animation: `nr-ink-bloom 3.2s cubic-bezier(.33,1,.68,1) ${at(LOAD.wings + 0.9)} both` }}>
+                    <InkArt src={w.src} ratio={w.ratio} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Centre cluster — hovering the wordmark reveals the game entry beside it */}
