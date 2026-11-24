@@ -67,10 +67,6 @@ const ART = {
   icon3: '/images/assets/icons/icon 3.png',
   menuIcons: '/images/assets/icons/purple-icons.png',
   playIcons: '/images/assets/icons/green-icons.png',
-  bull: '/images/assets/components/bull.png',
-  shell: '/images/assets/components/shell.png',
-  marking: '/images/assets/components/marking.png',
-  marking2: '/images/assets/components/marking-2.png',
 }
 
 /* Vector line art (Paper, "SVG Frame"), coloured by CSS. Preferred over the PNGs above. */
@@ -79,6 +75,10 @@ const SVG = {
   wingRight: { src: '/images/assets/svg/wings-right.svg', ratio: 2400 / 842 },
   dragon: { src: '/images/assets/svg/dragon.svg', ratio: 2400 / 1395 },
   sword: { src: '/images/assets/svg/sword.svg', ratio: 804 / 1953.036 },
+  bull: { src: '/images/assets/svg/bull.svg', ratio: 1515.629 / 994 },
+  shell: { src: '/images/assets/svg/shell.svg', ratio: 1514.639 / 970 },
+  marking: { src: '/images/assets/svg/marking.svg', ratio: 757.631 / 2420 },
+  marking2: { src: '/images/assets/svg/marking-2.svg', ratio: 1514.735 / 1285 },
 }
 
 /* Crest/wordmark width; the wings are sized off it so they keep the design's proportion.
@@ -175,12 +175,6 @@ const CREST_MASK: React.CSSProperties = {
   WebkitMaskPosition: 'center',
   maskPosition: 'center',
   mixBlendMode: 'screen',
-}
-
-/* Ghost line PNGs are white line art on transparent; invert + multiply reads them dark on paper. */
-const GHOST_FILTER: React.CSSProperties = {
-  filter: 'invert(1)',
-  mixBlendMode: 'multiply',
 }
 
 /* Thrown background art may hang this share of itself past the section's edges. */
@@ -445,18 +439,15 @@ function DragArt({
   )
 }
 
-/* marking-2 and the SVGs draw dark line art, unlike the white PNGs; they only need the multiply. */
-const DARK_GHOSTS = new Set<string>([ART.marking2, SVG.dragon.src, SVG.sword.src])
-
 const CATS = [
-  { label: 'Murals', href: '/walls', left: '25%', top: '21%', rot: 0, ghost: ART.bull },
-  { label: 'Paintings', href: '/paintings', left: '20%', top: '36%', rot: 0, ghost: ART.marking },
+  { label: 'Murals', href: '/walls', left: '25%', top: '21%', rot: 0, ghost: SVG.bull.src },
+  { label: 'Paintings', href: '/paintings', left: '20%', top: '36%', rot: 0, ghost: SVG.marking.src },
   { label: 'Illustrations', href: '/illustration', left: '17%', top: '53%', rot: 0, ghost: SVG.dragon.src },
-  { label: 'Installations', href: '/installations', left: '18%', top: '68%', rot: 0, ghost: ART.shell },
-  { label: 'Stage Design', href: '/stage-design', left: '75%', top: '21%', rot: 0, ghost: ART.marking2 },
+  { label: 'Installations', href: '/installations', left: '18%', top: '68%', rot: 0, ghost: SVG.shell.src },
+  { label: 'Stage Design', href: '/stage-design', left: '75%', top: '21%', rot: 0, ghost: SVG.marking2.src },
   { label: 'Workshops', href: '/workshops', left: '80%', top: '36%', rot: 0, ghost: SVG.sword.src },
-  { label: 'About', href: '/bio-contact', left: '83%', top: '53%', rot: 0, ghost: ART.marking },
-  { label: 'Shop', href: '/shop', left: '82%', top: '68%', rot: 0, ghost: ART.shell },
+  { label: 'About', href: '/bio-contact', left: '83%', top: '53%', rot: 0, ghost: SVG.marking.src },
+  { label: 'Shop', href: '/shop', left: '82%', top: '68%', rot: 0, ghost: SVG.shell.src },
 ] as const
 
 /**
@@ -840,9 +831,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   const [hover, setHover] = useState<number | null>(null)
   // Which illustration is painted, held apart from whether it is visible: on mouse-out
   // `hover` clears immediately, so reading the src off it would swap the image mid-fade.
-  const [ghostSrc, setGhostSrc] = useState<string>(ART.marking)
-  // Derived, not stored: ghostSrc outlives `hover` through the fade, and so must the polarity.
-  const ghostDark = DARK_GHOSTS.has(ghostSrc)
+  const [ghostSrc, setGhostSrc] = useState<string>(SVG.marking.src)
   const [near, setNear] = useState(false)
   const [narrow, setNarrow] = useState(false)
   const [nudge, setNudge] = useState<readonly number[]>(() => CATS.map(() => 0))
@@ -1789,14 +1778,20 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                 ? `translateX(-50%) scale(${hover !== null ? 1 : 0.94})`
                 : `translate(-50%,-50%) scale(${hover !== null ? 1 : 0.94})`,
               transformOrigin: ghostBox ? 'center bottom' : 'center',
-              backgroundImage: `url(${ghostSrc})`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: ghostBox ? 'center bottom' : 'center',
-              backgroundSize: 'contain',
+              // The drawing is the mask and the ink fills it, so the ghost is the page's ink
+              // rather than the file's black.
+              background: INK,
+              WebkitMaskImage: `url(${ghostSrc})`,
+              maskImage: `url(${ghostSrc})`,
+              WebkitMaskRepeat: 'no-repeat',
+              maskRepeat: 'no-repeat',
+              WebkitMaskPosition: ghostBox ? 'center bottom' : 'center',
+              maskPosition: ghostBox ? 'center bottom' : 'center',
+              WebkitMaskSize: 'contain',
+              maskSize: 'contain',
               opacity: menuOpen && hover !== null ? 0.3 : 0,
               translate: depth(DEPTH.ghost),
               transition: `opacity .8s ease, transform 1.2s ${EASE}, ${DEPTH_EASE}`,
-              ...(ghostDark ? { mixBlendMode: 'multiply' as const } : GHOST_FILTER),
             }}
           />
 
