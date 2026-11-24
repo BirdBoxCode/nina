@@ -85,8 +85,10 @@ const SVG = {
   sword: { src: '/images/assets/svg/sword.svg', ratio: 804 / 1953.036 },
 }
 
-/* Crest/wordmark width; the wings are sized off it so they keep the design's proportion. */
-const LOGO_W = 'clamp(140px, 19vw, 300px)'
+/* Crest/wordmark width; the wings are sized off it so they keep the design's proportion.
+   Grows on large screens so the hero holds the page; height-capped so short laptops keep
+   the whole cluster in view. Unchanged at 1440 wide. */
+const LOGO_W = 'clamp(140px, min(19vw, 44vh), 340px)'
 
 /* Play group, beside the wordmark and scaled with it so it never runs off a narrow screen.
    The green strip (78×247) is turned to a row: its height is the strip's width. */
