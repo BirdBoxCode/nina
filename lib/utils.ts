@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { INK_RGB } from "@/lib/palette";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -13,6 +14,6 @@ export function cn(...inputs: ClassValue[]) {
 export function liftShadow(x: number, y: number, blur: number, shift: number, alpha: number) {
   return (
     `drop-shadow(calc(${x}px - var(--nr-dx, 0) * ${shift}px) ` +
-    `calc(${y}px - var(--nr-dy, 0) * ${shift}px) ${blur}px rgba(60, 58, 80, ${alpha}))`
+    `calc(${y}px - var(--nr-dy, 0) * ${shift}px) ${blur}px rgba(${INK_RGB}, ${alpha}))`
   )
 }

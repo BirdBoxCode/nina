@@ -8,6 +8,7 @@ import { animate, motion, useDragControls, useMotionValue } from 'framer-motion'
 import { TransitionLink, useTransitionCovered, REVEAL_CLEAR_DELAY } from '@/components/PageTransition'
 import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconOverlay, navIconWidth, useScrolled } from '@/components/SideNav'
 import { liftShadow } from '@/lib/utils'
+import { PALETTE } from '@/lib/palette'
 import { HomeIntro, useIntroOnce, type IntroLayout } from '@/components/HomeIntro'
 
 /* Real-3D wordmark; WebGL, so client only. The flat PNG holds the layout until it is drawn. */
@@ -44,17 +45,17 @@ const PLAY_LINGER = 300
 /* Menu labels sit at mixed depths (10–22px) so they part from one another in space. */
 const labelDepth = (i: number) => 10 + ((i * 5) % 13)
 
-/* --- Design tokens (Nocturne, run on a light paper ground) --- */
-const PAPER = '#EFEBE2'
-const FRAME = '#E6E1D7'
-const INK = '#76736B'
-const MUTED = '#76736B'
-const MUTED_LIGHT = '#8F8B82'
-const DIMMED = '#B5B1A8'
-const RULE = '#BDB9B0'
-const RULE_LIGHT = '#D6D2C9'
-const BORDER = '#dcd8ce'
-const ACCENT = '#4E4B45'
+/* --- Design tokens (organic: ink on paper, see lib/palette.ts) --- */
+const PAPER = PALETTE.paper
+const FRAME = PALETTE.paperDeep
+const INK = PALETTE.ink
+const MUTED = PALETTE.inkSoft
+const MUTED_LIGHT = PALETTE.inkMuted
+const DIMMED = PALETTE.inkFaint
+const RULE = PALETTE.rule
+const RULE_LIGHT = PALETTE.rule
+const BORDER = PALETTE.rule
+const ACCENT = PALETTE.ink
 
 /* --- Assets. Paths confirmed against /public by checksum against the handoff set. --- */
 const ART = {
@@ -779,7 +780,7 @@ function HeroRoles({
       className="relative m-0 grid pointer-events-none"
       // top: the word boxes' descender padding sits below the text; shift by half of it so
       // the phrase centres on the same line as the name.
-      style={{ fontFamily: 'var(--font-sans)', lineHeight: 1, letterSpacing: '.01em', color: INK, justifyItems: align, top: '.07em', ...style }}
+      style={{ fontFamily: 'var(--font-sans)', lineHeight: 1, letterSpacing: '.01em', color: MUTED, justifyItems: align, top: '.07em', ...style }}
     >
       <span className="sr-only">{ROLES.join(', ')}</span>
       {ROLES.map((role, ri) => {
@@ -1924,7 +1925,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                 </div>
                 <div className="flex items-baseline justify-between gap-4 pt-[13px]">
                   <span
-                    className="transition-colors duration-300 group-hover:text-[#4E4B45]"
+                    className="transition-colors duration-300 group-hover:text-[#3A3631]"
                     style={{
                       fontFamily: 'var(--font-sans)',
                       fontWeight: 500,
@@ -1963,17 +1964,17 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             style={{ width: 'clamp(78px, 8vw, 104px)' }}
           />
           <div className="flex gap-7">
-            <TransitionLink href="/bio-contact" className="hover:text-[#4E4B45]" style={MICRO}>
+            <TransitionLink href="/bio-contact" className="hover:text-[#3A3631]" style={MICRO}>
               About
             </TransitionLink>
-            <TransitionLink href="/shop" className="hover:text-[#4E4B45]" style={MICRO}>
+            <TransitionLink href="/shop" className="hover:text-[#3A3631]" style={MICRO}>
               Shop
             </TransitionLink>
             <a
               href="https://lineacruda.com"
               target="_blank"
               rel="noopener"
-              className="hover:text-[#4E4B45]"
+              className="hover:text-[#3A3631]"
               style={MICRO}
             >
               Tattoos ↗

@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import { TransitionLink } from '@/components/PageTransition'
 import { liftShadow } from '@/lib/utils'
+import { PALETTE } from '@/lib/palette'
 
 /* 3D menu icons (WebGL, client only); the flat PNG holds the layout until they are drawn. */
 const MenuIcons3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.MenuIcons3D), {
@@ -15,9 +16,9 @@ const MenuIcons3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) =
 const ICON_SHADOW = liftShadow(1, 2.5, 2.5, 4, 0.4)
 
 /* --- Tokens shared with the home page (NinaroHome) --- */
-export const PAPER = '#EFEBE2'
-const INK = '#76736B'
-const ACCENT = '#4E4B45'
+export const PAPER = PALETTE.paper
+const INK = PALETTE.inkSoft
+const ACCENT = PALETTE.ink
 const PANEL = '#DBDCC1'
 const EASE = 'cubic-bezier(.2,.7,.2,1)'
 
@@ -337,7 +338,7 @@ export function SideNav() {
                   tabIndex={open ? 0 : -1}
                   aria-current={active ? 'page' : undefined}
                   onClick={() => setOpen(false)}
-                  className="inline-block hover:text-[#4E4B45]! hover:tracking-[.04em]"
+                  className="inline-block hover:text-[#3A3631]! hover:tracking-[.04em]"
                   style={linkStyle(active, i + 1)}
                 >
                   {l.label}
@@ -359,7 +360,7 @@ export function SideNav() {
           rel="noopener"
           tabIndex={open ? 0 : -1}
           onClick={() => setOpen(false)}
-          className="inline-block self-start hover:text-[#4E4B45]! hover:tracking-[.04em]"
+          className="inline-block self-start hover:text-[#3A3631]! hover:tracking-[.04em]"
           style={linkStyle(false, LINKS.length + 1)}
         >
           Tattoo ↗
