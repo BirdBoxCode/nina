@@ -16,8 +16,8 @@ const ICON_SHADOW = liftShadow(1, 2.5, 2.5, 4, 0.4)
 
 /* --- Tokens shared with the home page (NinaroHome) --- */
 export const PAPER = '#EFEBE2'
-const INK = '#5C5970'
-const ACCENT = '#5d5294'
+const INK = '#76736B'
+const ACCENT = '#4E4B45'
 const PANEL = '#DBDCC1'
 const EASE = 'cubic-bezier(.2,.7,.2,1)'
 
@@ -229,6 +229,7 @@ export function SideNav() {
 
   const linkStyle = (active: boolean, i: number): React.CSSProperties => ({
     fontFamily: 'var(--font-display)',
+    fontWeight: 500,
     fontSize: '26px',
     lineHeight: 1.15,
     color: active ? ACCENT : INK,
@@ -291,7 +292,7 @@ export function SideNav() {
         onClick={() => setOpen(false)}
         className="fixed inset-0 z-[64] motion-reduce:transition-none"
         style={{
-          background: 'rgba(46, 40, 60, .18)',
+          background: 'rgba(60, 56, 50, .18)',
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
           transition: 'opacity .5s ease',
@@ -310,7 +311,7 @@ export function SideNav() {
           // 48px of air between the icons and the NINARÒ wordmark.
           paddingTop: `calc(${BAR_H} + 48px)`,
           transform: open ? 'none' : 'translateX(-100%)',
-          boxShadow: open ? '0 0 40px rgba(46, 40, 60, .12)' : 'none',
+          boxShadow: open ? '0 0 40px rgba(60, 56, 50, .12)' : 'none',
           transition: `transform .5s ${EASE}, box-shadow .5s ease`,
         }}
       >
@@ -334,7 +335,7 @@ export function SideNav() {
                   tabIndex={open ? 0 : -1}
                   aria-current={active ? 'page' : undefined}
                   onClick={() => setOpen(false)}
-                  className="inline-block hover:text-[#5d5294]! hover:tracking-[.04em]"
+                  className="inline-block hover:text-[#4E4B45]! hover:tracking-[.04em]"
                   style={linkStyle(active, i + 1)}
                 >
                   {l.label}
@@ -356,7 +357,7 @@ export function SideNav() {
           rel="noopener"
           tabIndex={open ? 0 : -1}
           onClick={() => setOpen(false)}
-          className="inline-block self-start hover:text-[#5d5294]! hover:tracking-[.04em]"
+          className="inline-block self-start hover:text-[#4E4B45]! hover:tracking-[.04em]"
           style={linkStyle(false, LINKS.length + 1)}
         >
           Tattoo ↗

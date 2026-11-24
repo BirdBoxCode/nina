@@ -8,6 +8,7 @@ import { animate, motion, useDragControls, useMotionValue } from 'framer-motion'
 import { TransitionLink, useTransitionCovered, REVEAL_CLEAR_DELAY } from '@/components/PageTransition'
 import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconOverlay, navIconWidth, useScrolled } from '@/components/SideNav'
 import { liftShadow } from '@/lib/utils'
+import { HomeIntro, useIntroOnce, type IntroLayout } from '@/components/HomeIntro'
 
 /* Real-3D wordmark; WebGL, so client only. The flat PNG holds the layout until it is drawn. */
 const NinaroLogo3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.NinaroLogo3D), {
@@ -46,14 +47,14 @@ const labelDepth = (i: number) => 10 + ((i * 5) % 13)
 /* --- Design tokens (Nocturne, run on a light paper ground) --- */
 const PAPER = '#EFEBE2'
 const FRAME = '#E6E1D7'
-const INK = '#5C5970'
-const MUTED = '#5C5970'
-const MUTED_LIGHT = '#7D7A8E'
-const DIMMED = '#A5A2B2'
-const RULE = '#b2b6ca'
-const RULE_LIGHT = '#cfd3e5'
+const INK = '#76736B'
+const MUTED = '#76736B'
+const MUTED_LIGHT = '#8F8B82'
+const DIMMED = '#B5B1A8'
+const RULE = '#BDB9B0'
+const RULE_LIGHT = '#D6D2C9'
 const BORDER = '#dcd8ce'
-const ACCENT = '#5d5294'
+const ACCENT = '#4E4B45'
 
 /* --- Assets. Paths confirmed against /public by checksum against the handoff set. --- */
 const ART = {
@@ -110,6 +111,8 @@ const LOAD = {
   wingStagger: 0.1,
   cue: 2.2,
   done: 2.7,
+  name: 1.0,
+  roles: 1.5,
 }
 const UNFURL_EASE = 'cubic-bezier(.22,.8,.25,1)'
 
@@ -535,6 +538,260 @@ function useReveal() {
   return { register, revealStyle }
 }
 
+/* --- Hero name and rotating roles --- */
+const NAME_WORDS = [
+  { text: 'NINA', weight: 100 },
+  { text: 'ROSSI', weight: 500 },
+]
+const NAME_COUNT = NAME_WORDS.reduce((n, w) => n + w.text.length, 0)
+/* Index of each word's first letter across the whole name. */
+const NAME_OFFSETS = NAME_WORDS.map((_, wi) => NAME_WORDS.slice(0, wi).reduce((n, w) => n + w.text.length, 0))
+/* Letters float up one after another, each rising from below a clipped baseline. */
+const NAME_STAGGER = 0.06
+const NAME_LETTER_DUR = 0.75
+/* Cursor pull, in multiples of the name's font size. Each letter on its own lifts toward
+   the cursor (`lift` of its vertical offset, fading over `liftReach` up/down and
+   `liftSpread` sideways, so only the letters near it rise: a wave, not a block) and swells
+   by up to `swell`, fading over `swellReach` from its centre. */
+const NAME_PULL = { lift: 0.24, liftReach: 2.5, liftSpread: 1.2, swell: 0.15, swellReach: 1.6 }
+/* Spring per frame: share of the remaining distance added, velocity kept. */
+const SPRING = { pull: 0.09, keep: 0.8 }
+
+const ROLES = ['Creative Artist', 'Tattooist', 'Illustrator']
+const ROLE_CYCLE = 3800
+const ROLE_WORD_STAGGER = 0.05
+
+/* A 3D piece that has not drawn after this long no longer holds up the next one. */
+const BUILD_LATE = 2500
+
+/**
+ * NINA ROSSI. Floats in letter by letter, then (mouse only, motion allowed) lifts toward
+ * the cursor and swells the letters nearest it, springing back when it leaves. The intro
+ * is a CSS animation on each letter; the cursor response is written to an inner glyph so
+ * the two never fight over one transform.
+ */
+function HeroName({
+  startAt,
+  go,
+  rootRef,
+  style,
+}: {
+  startAt: number
+  /** False while the home intro is up; the settle timer starts with the entrance. */
+  go: boolean
+  rootRef: React.RefObject<HTMLHeadingElement | null>
+  style: React.CSSProperties
+}) {
+  const glyphRefs = useRef<(HTMLSpanElement | null)[]>([])
+  const [live, setLive] = useState(false)
+  const count = NAME_COUNT
+  const settleAt = startAt + count * NAME_STAGGER + NAME_LETTER_DUR
+
+  useEffect(() => {
+    if (!go) return
+    const id = setTimeout(() => setLive(true), settleAt * 1000)
+    return () => clearTimeout(id)
+  }, [settleAt, go])
+
+  useEffect(() => {
+    if (!live) return
+    if (!window.matchMedia('(hover: hover)').matches) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const root = rootRef.current
+    const glyphs = glyphRefs.current.filter((g): g is HTMLSpanElement => !!g)
+    if (!root || !glyphs.length) return
+
+    const lift = glyphs.map(() => ({ x: 0, v: 0 }))
+    const swell = glyphs.map(() => ({ x: 1, v: 0 }))
+    let px = -1e5
+    let py = -1e5
+    let frame = 0
+
+    const tick = () => {
+      frame = 0
+      const fs = parseFloat(getComputedStyle(root).fontSize)
+      const liftReach = fs * NAME_PULL.liftReach
+      const liftSpread = fs * NAME_PULL.liftSpread
+      const swellReach = fs * NAME_PULL.swellReach
+      // Read every letter's resting centre before writing any transform.
+      const centres = glyphs.map((g) => {
+        const r = (g.parentElement ?? g).getBoundingClientRect()
+        return [r.left + r.width / 2, r.top + r.height / 2]
+      })
+      let moving = false
+      const step = (s: { x: number; v: number }, target: number, eps: number) => {
+        s.v = s.v * SPRING.keep + (target - s.x) * SPRING.pull
+        s.x += s.v
+        if (Math.abs(s.v) > eps || Math.abs(target - s.x) > eps) moving = true
+      }
+      glyphs.forEach((g, i) => {
+        const ddx = px - centres[i][0]
+        const ddy = py - centres[i][1]
+        const liftTarget =
+          ddy * NAME_PULL.lift * Math.exp(-(ddy * ddy) / (liftReach * liftReach) - (ddx * ddx) / (liftSpread * liftSpread))
+        const swellTarget = 1 + NAME_PULL.swell * Math.exp(-(ddx * ddx + ddy * ddy) / (swellReach * swellReach))
+        step(lift[i], liftTarget, 0.02)
+        step(swell[i], swellTarget, 0.0005)
+        g.style.transform = `translate3d(0, ${lift[i].x.toFixed(2)}px, 0) scale(${swell[i].x.toFixed(4)})`
+      })
+      if (moving) frame = requestAnimationFrame(tick)
+    }
+
+    const onMove = (e: PointerEvent) => {
+      px = e.clientX
+      py = e.clientY
+      if (!frame) frame = requestAnimationFrame(tick)
+    }
+    const onLeave = () => {
+      px = -1e5
+      py = -1e5
+      if (!frame) frame = requestAnimationFrame(tick)
+    }
+    window.addEventListener('pointermove', onMove, { passive: true })
+    document.documentElement.addEventListener('pointerleave', onLeave)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      document.documentElement.removeEventListener('pointerleave', onLeave)
+      cancelAnimationFrame(frame)
+      glyphs.forEach((g) => (g.style.transform = ''))
+    }
+  }, [live, rootRef])
+
+  return (
+    <h1
+      ref={rootRef}
+      aria-label="Nina Rossi"
+      className="m-0 pointer-events-none whitespace-nowrap"
+      style={{ fontFamily: 'var(--font-sans)', lineHeight: 1, letterSpacing: '.02em', color: INK, ...style }}
+    >
+      <span
+        aria-hidden="true"
+        className="block"
+        // Baseline clip while the letters rise; dropped once they settle so the cursor
+        // lift and swell are never cut off.
+        style={{ clipPath: live ? 'none' : 'inset(-0.6em -0.4em -0.06em)' }}
+      >
+        {NAME_WORDS.map((w, wi) => (
+          <React.Fragment key={w.text}>
+            {wi > 0 && ' '}
+            <span className="inline-block" style={{ fontWeight: w.weight }}>
+              {[...w.text].map((ch, li) => {
+                const i = NAME_OFFSETS[wi] + li
+                // Deeper start mid-word (a gentle arc), tilt easing from one side to the other.
+                const rise = 0.5 + 0.12 * Math.sin((Math.PI * i) / (count - 1))
+                const tilt = 2.6 - (5.2 * i) / (count - 1)
+                return (
+                  <span
+                    key={i}
+                    className="inline-block"
+                    style={
+                      {
+                        '--rise': `${rise.toFixed(3)}em`,
+                        '--tilt': `${tilt.toFixed(2)}deg`,
+                        animation:
+                          `nr-letter-in ${NAME_LETTER_DUR}s cubic-bezier(.22,1,.36,1) ${(startAt + i * NAME_STAGGER).toFixed(2)}s both, ` +
+                          `nr-letter-idle 3.6s ease-in-out ${(settleAt + i * 0.12).toFixed(2)}s infinite alternate`,
+                      } as React.CSSProperties
+                    }
+                  >
+                    <span
+                      ref={(el) => {
+                        glyphRefs.current[i] = el
+                      }}
+                      className="block"
+                      style={{ transformOrigin: '50% 72%', willChange: 'transform' }}
+                    >
+                      {ch}
+                    </span>
+                  </span>
+                )
+              })}
+            </span>
+          </React.Fragment>
+        ))}
+      </span>
+    </h1>
+  )
+}
+
+/**
+ * Creative Artist / Tattooist / Illustrator, one at a time in a single slot. Every
+ * ROLE_CYCLE the words roll up and out while the next phrase's words roll up from below,
+ * each clipped by its own box.
+ */
+function HeroRoles({
+  startAt,
+  go,
+  align,
+  style,
+}: {
+  startAt: number
+  /** False while the home intro is up; the rotation starts with the entrance. */
+  go: boolean
+  align: 'end' | 'center'
+  style: React.CSSProperties
+}) {
+  const [roles, setRoles] = useState({ cur: 0, prev: -1, first: true })
+
+  useEffect(() => {
+    if (!go) return
+    let interval: ReturnType<typeof setInterval> | undefined
+    const start = setTimeout(() => {
+      interval = setInterval(
+        () => setRoles((r) => ({ cur: (r.cur + 1) % ROLES.length, prev: r.cur, first: false })),
+        ROLE_CYCLE,
+      )
+    }, startAt * 1000)
+    return () => {
+      clearTimeout(start)
+      if (interval) clearInterval(interval)
+    }
+  }, [startAt, go])
+
+  const wordStyle = (state: 'in' | 'out' | 'idle', wi: number): React.CSSProperties => {
+    if (state === 'in') {
+      const delay = (roles.first ? startAt : 0) + wi * ROLE_WORD_STAGGER
+      return { animation: `nr-word-in .9s cubic-bezier(.22,1,.36,1) ${delay.toFixed(2)}s both` }
+    }
+    if (state === 'out') {
+      return {
+        transform: 'translateY(-115%)',
+        animation: `nr-word-out .62s cubic-bezier(.65,0,.35,1) ${(wi * ROLE_WORD_STAGGER).toFixed(2)}s both`,
+      }
+    }
+    return { transform: 'translateY(115%)' }
+  }
+
+  return (
+    <p
+      className="relative m-0 grid pointer-events-none"
+      // top: the word boxes' descender padding sits below the text; shift by half of it so
+      // the phrase centres on the same line as the name.
+      style={{ fontFamily: 'var(--font-sans)', lineHeight: 1, letterSpacing: '.01em', color: INK, justifyItems: align, top: '.07em', ...style }}
+    >
+      <span className="sr-only">{ROLES.join(', ')}</span>
+      {ROLES.map((role, ri) => {
+        const state = ri === roles.cur ? 'in' : ri === roles.prev ? 'out' : 'idle'
+        const words = role.split(' ')
+        return (
+          <span key={role} aria-hidden="true" className="whitespace-nowrap" style={{ gridArea: '1 / 1' }}>
+            {words.map((w, wi) => (
+              <React.Fragment key={wi}>
+                {wi > 0 && ' '}
+                <span className="relative inline-block overflow-hidden align-top" style={{ paddingBottom: '.14em' }}>
+                  <span className="inline-block" style={wordStyle(state, wi)}>
+                    {w}
+                  </span>
+                </span>
+              </React.Fragment>
+            ))}
+          </span>
+        )
+      })}
+    </p>
+  )
+}
+
 export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | null }) {
   // Sanity cards (up to six) fill the design's slots in order; with none published, the placeholder set.
   const cards = selectedWork?.cards ?? []
@@ -607,6 +864,23 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   const at = (t: number) => `${(loadDelay + t).toFixed(2)}s`
   // Logo hover (Play reveal, wing fade) holds off until the sequence has played out.
   const [loaded, setLoaded] = useState(false)
+  // Home intro: a full page load only. Until it opens, the hero's entrance is held.
+  const playIntro = useIntroOnce()
+  const [heroGo, setHeroGo] = useState(!playIntro)
+  const openHero = useCallback(() => setHeroGo(true), [])
+  const nameRef = useRef<HTMLHeadingElement | null>(null)
+  const [fontsReady, setFontsReady] = useState(false)
+  // The 3D pieces build one after another (crest, wordmark, menu icons), so no single
+  // main-thread stall is long; each waits for the one before, or moves on if it is late.
+  const [crestLate, setCrestLate] = useState(false)
+  const [logoLate, setLogoLate] = useState(false)
+  const [iconsLate, setIconsLate] = useState(false)
+  const crestSettled = !CREST_3D || reducedMotion || crest3dReady || crestLate
+  const logoGo = crestSettled
+  const logoSettled = reducedMotion || logo3dReady || logoLate
+  const iconsGo = logoSettled
+  const iconsSettled = icons3dReady || iconsLate
+  const introProgress = [fontsReady, crestSettled, logoSettled, iconsSettled].filter(Boolean).length / 4
   // Play opens on the wordmark only (Play sits inside it); leaving closes it after
   // PLAY_LINGER, cancelled if the cursor comes back in time.
   const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -839,9 +1113,56 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   }, [])
 
   useEffect(() => {
+    if (!heroGo) return
     const id = setTimeout(() => setLoaded(true), (loadDelay + LOAD.done) * 1000)
     return () => clearTimeout(id)
-  }, [loadDelay])
+  }, [loadDelay, heroGo])
+
+  useEffect(() => {
+    let live = true
+    document.fonts.ready.then(() => live && setFontsReady(true))
+    return () => {
+      live = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const id = setTimeout(() => setCrestLate(true), BUILD_LATE)
+    return () => clearTimeout(id)
+  }, [])
+  useEffect(() => {
+    if (!logoGo) return
+    const id = setTimeout(() => setLogoLate(true), BUILD_LATE)
+    return () => clearTimeout(id)
+  }, [logoGo])
+  useEffect(() => {
+    if (!iconsGo) return
+    const id = setTimeout(() => setIconsLate(true), BUILD_LATE)
+    return () => clearTimeout(id)
+  }, [iconsGo])
+
+  // Where the intro lays its crest imprint and name: over the hero's own, at rest. The
+  // crest's entrance holds it lifted and scaled, so its box comes from layout sizes and
+  // logoRef (which never moves), not from the crest's transformed rect.
+  const measureIntro = useCallback((): IntroLayout | null => {
+    const logo = logoRef.current
+    const crest = crestRef.current
+    const name = nameRef.current
+    if (!logo || !crest || !name) return null
+    const lb = logo.getBoundingClientRect()
+    const nb = name.getBoundingClientRect()
+    const ns = getComputedStyle(name)
+    return {
+      crest: { cx: lb.left + lb.width / 2, cy: lb.top + crest.offsetHeight / 2, w: crest.offsetWidth, h: crest.offsetHeight },
+      name: {
+        left: nb.left,
+        top: nb.top,
+        width: nb.width,
+        fontSize: parseFloat(ns.fontSize),
+        align: ns.textAlign === 'center' ? 'center' : 'left',
+      },
+    }
+  }, [])
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -972,8 +1293,22 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
         }}
       />
 
+      {playIntro && (
+        <HomeIntro
+          progress={introProgress}
+          measure={measureIntro}
+          words={NAME_WORDS}
+          crestSrc={ART.ornament}
+          onOpen={openHero}
+        />
+      )}
+
       {/* ===== Hero ===== */}
-      <section ref={heroRef} className="relative flex items-center justify-center h-screen min-h-[560px]">
+      <section
+        ref={heroRef}
+        data-hold={heroGo ? undefined : ''}
+        className="relative flex items-center justify-center h-screen min-h-[560px]"
+      >
         {/* Top bar — fixed; compacts onto a paper band once the page scrolls. The bar
             itself lets clicks through so its box never blocks the content below. */}
         <div
@@ -1014,7 +1349,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
               />
               {/* 3D icons over the flat ones; scaled (never resized) to track the compact bar. */}
               <span className="block" style={navIconOverlay(scrolled, 1 + iconNear * ICON_GROW)}>
-                <MenuIcons3D visible={icons3dReady} shadow={SHADOW.icons} onReady={onIcons3dReady} />
+                {iconsGo && <MenuIcons3D visible={icons3dReady} shadow={SHADOW.icons} onReady={onIcons3dReady} />}
               </span>
             </span>
           </button>
@@ -1026,7 +1361,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             className="pointer-events-auto relative flex items-center gap-3 p-1.5"
             style={{ animation: `nr-bar-in .9s ${EASE} ${at(LOAD.bar + 0.08)} both` }}
           >
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: MUTED }}>Tattoo</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '18px', color: MUTED }}>Tattoo</span>
             <Image src={ART.icon2} alt="" width={26} height={26} className="w-[26px] h-[26px]" aria-hidden="true" />
           </a>
         </div>
@@ -1254,11 +1589,73 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                 />
                 {/* Real-3D wordmark over the flat one; the PNG stays as the fallback (no
                     WebGL, reduced motion) and keeps the layout box either way. */}
-                {!reducedMotion && (
+                {!reducedMotion && logoGo && (
                   <NinaroLogo3D glide={glide} visible={logo3dReady} shadow={SHADOW.logo} onReady={onLogo3dReady} />
                 )}
               </div>
             </div>
+            </div>
+
+            {/* Name and roles — out of flow, so logoRef's box (read by the collision
+                measure) is unchanged. Desktop: under each wing, level with the crest's
+                foot, name aligned to the left wing tip and roles to the right. Narrow:
+                stacked, name above the crest and roles below the wordmark. */}
+            <div
+              className="absolute"
+              style={
+                narrow
+                  ? { left: '50%', bottom: 'calc(100% + clamp(18px, 5vw, 32px))', transform: 'translateX(-50%)' }
+                  : {
+                      right: WING_GAP,
+                      top: `calc(${LOGO_W} * 1.114)`,
+                      width: `calc(${LOGO_W} * 1.75)`,
+                      paddingLeft: `calc(${LOGO_W} * 0.04)`,
+                      transform: 'translateY(-50%)',
+                      textAlign: 'left',
+                      translate: depth(DEPTH.wings),
+                      transition: DEPTH_EASE,
+                    }
+              }
+            >
+              <HeroName
+                startAt={loadDelay + LOAD.name}
+                go={heroGo}
+                rootRef={nameRef}
+                style={{
+                  fontSize: narrow ? 'clamp(26px, 7.5vw, 40px)' : `calc(${LOGO_W} * 0.2)`,
+                  textAlign: narrow ? 'center' : 'left',
+                  opacity: menuOpen ? 0.15 : 1,
+                  transition: 'opacity .5s ease',
+                }}
+              />
+            </div>
+            <div
+              className="absolute"
+              style={
+                narrow
+                  ? { left: '50%', top: 'calc(100% + clamp(14px, 4vw, 26px))', transform: 'translateX(-50%)' }
+                  : {
+                      left: WING_GAP,
+                      top: `calc(${LOGO_W} * 1.114)`,
+                      width: `calc(${LOGO_W} * 1.75)`,
+                      paddingRight: `calc(${LOGO_W} * 0.1)`,
+                      transform: 'translateY(-50%)',
+                      translate: depth(DEPTH.wings),
+                      transition: DEPTH_EASE,
+                    }
+              }
+            >
+              <HeroRoles
+                startAt={loadDelay + LOAD.roles}
+                go={heroGo}
+                align={narrow ? 'center' : 'end'}
+                style={{
+                  fontSize: narrow ? 'clamp(18px, 5.2vw, 26px)' : `calc(${LOGO_W} * 0.21)`,
+                  fontWeight: narrow ? 400 : 100,
+                  opacity: menuOpen ? 0.15 : 1,
+                  transition: 'opacity .5s ease',
+                }}
+              />
             </div>
           </div>
 
@@ -1315,7 +1712,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
               // Open enough to breathe while the script still joins; the hover widening
               // is the original gesture rescaled to this baseline, not a new one.
               letterSpacing: hover === i ? '.11em' : '.07em',
-              fontWeight: 400,
+              fontWeight: 600,
               whiteSpace: 'nowrap',
               color: hover === i ? ACCENT : hover === null ? INK : DIMMED,
               transform:
@@ -1433,7 +1830,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             style={{
               fontFamily: 'var(--font-sans)',
               fontSize: 'clamp(32px, 3.4vw, 46px)',
-              fontWeight: 700,
+              fontWeight: 500,
               letterSpacing: '.04em',
               textTransform: 'uppercase',
               color: INK,
@@ -1481,10 +1878,10 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                 </div>
                 <div className="flex items-baseline justify-between gap-4 pt-[13px]">
                   <span
-                    className="transition-colors duration-300 group-hover:text-[#5d5294]"
+                    className="transition-colors duration-300 group-hover:text-[#4E4B45]"
                     style={{
                       fontFamily: 'var(--font-sans)',
-                      fontWeight: 700,
+                      fontWeight: 500,
                       fontSize: '28px',
                       letterSpacing: '.05em',
                       textTransform: 'uppercase',
@@ -1520,17 +1917,17 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             style={{ width: 'clamp(78px, 8vw, 104px)' }}
           />
           <div className="flex gap-7">
-            <TransitionLink href="/bio-contact" className="hover:text-[#5d5294]" style={MICRO}>
+            <TransitionLink href="/bio-contact" className="hover:text-[#4E4B45]" style={MICRO}>
               About
             </TransitionLink>
-            <TransitionLink href="/shop" className="hover:text-[#5d5294]" style={MICRO}>
+            <TransitionLink href="/shop" className="hover:text-[#4E4B45]" style={MICRO}>
               Shop
             </TransitionLink>
             <a
               href="https://lineacruda.com"
               target="_blank"
               rel="noopener"
-              className="hover:text-[#5d5294]"
+              className="hover:text-[#4E4B45]"
               style={MICRO}
             >
               Tattoos ↗

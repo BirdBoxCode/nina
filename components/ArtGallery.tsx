@@ -36,7 +36,7 @@ const STEP_EASE = 'cubic-bezier(.45,.05,.2,1)'
 const DRAG_STEP = 50
 
 /* Placeholder frames until the real pieces land — soft tints from the site palette. */
-const PLACEHOLDER_TINTS = ['#E6E1D7', '#DBDCC1', '#D9D6E6', '#E4DCCF', '#CFD3E5']
+const PLACEHOLDER_TINTS = ['#E6E1D7', '#DBDCC1', '#DDD8CE', '#E4DCCF', '#D6D2C9']
 
 type Slot = { kind: 'piece'; piece: Artwork } | { kind: 'placeholder'; tint: string }
 
@@ -365,7 +365,7 @@ export function ArtGallery({
       <main className="mx-auto max-w-[1280px] px-6 pt-10 md:px-10 md:pt-16">
         <div className="mb-12 flex items-baseline gap-4 md:mb-20">
           <h1
-            className="font-display text-[44px] leading-none md:text-[64px]"
+            className="font-display font-medium text-[44px] leading-none md:text-[64px]"
             style={{ color: INK }}
           >
             {meta.label}
@@ -423,7 +423,7 @@ export function ArtGallery({
                 'opacity-0 transition-opacity duration-300 group-hover/carousel:opacity-100 focus-visible:opacity-100 md:flex ' +
                 (dir < 0 ? 'left-[calc(50%_-_min(32vw,500px)_-_22px)]' : 'right-[calc(50%_-_min(32vw,500px)_-_22px)]')
               }
-              style={{ background: 'rgba(239, 235, 226, .9)', color: INK, boxShadow: '0 2px 14px rgba(46,51,82,.12)' }}
+              style={{ background: 'rgba(239, 235, 226, .9)', color: INK, boxShadow: '0 2px 14px rgba(60,56,50,.12)' }}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
                 <path

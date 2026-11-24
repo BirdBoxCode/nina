@@ -11,7 +11,7 @@ interface SubPageLayoutProps {
   children: React.ReactNode
 }
 
-const INK = '#5C5970'
+const INK = '#76736B'
 
 export function SubPageLayout({ variant, title, subtitle, children }: SubPageLayoutProps) {
   const isArt = variant === 'art'
@@ -30,7 +30,7 @@ export function SubPageLayout({ variant, title, subtitle, children }: SubPageLay
             animate={{ opacity: 1, x: 0 }}
             className="flex items-end gap-4 border-b border-current pb-4"
           >
-            <h1 className="text-5xl md:text-8xl font-display tracking-tighter uppercase leading-none">
+            <h1 className="text-5xl md:text-8xl font-display font-medium tracking-tighter uppercase leading-none">
               {title}
             </h1>
             {subtitle && (
