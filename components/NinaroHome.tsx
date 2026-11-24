@@ -120,11 +120,12 @@ const LOAD = {
   wings: 1.3,
   wingStagger: 0.1,
   cue: 2.2,
-  done: 2.7,
+  done: 3.6,
   name: 1.0,
   roles: 1.5,
 }
-const UNFURL_EASE = 'cubic-bezier(.22,.8,.25,1)'
+/* Wings ink in along their lines: seconds per strand, and between strands. */
+const WING_DRAW = { duration: 2.4, stagger: 0.16, width: 60 }
 
 /* Scroll parallax speeds, relative to the page (1 = moves with it, 0 = holds still). */
 const PARALLAX = {
@@ -1446,8 +1447,8 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                   calm={reducedMotion}
                   onHot={onLeftWingHot}
                 >
-                  <div style={{ color: INK, animation: `nr-unfurl-left 1.4s ${UNFURL_EASE} ${at(LOAD.wings)} both` }}>
-                    <InkArt src={SVG.wingLeft.src} ratio={SVG.wingLeft.ratio} />
+                  <div style={{ color: INK }}>
+                    <InkArt src={SVG.wingLeft.src} ratio={SVG.wingLeft.ratio} draw={{ ...WING_DRAW, delay: at(LOAD.wings) }} />
                   </div>
                 </DragArt>
               </div>
@@ -1461,8 +1462,12 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                   calm={reducedMotion}
                   onHot={onRightWingHot}
                 >
-                  <div style={{ color: INK, animation: `nr-unfurl-right 1.4s ${UNFURL_EASE} ${at(LOAD.wings + LOAD.wingStagger)} both` }}>
-                    <InkArt src={SVG.wingRight.src} ratio={SVG.wingRight.ratio} />
+                  <div style={{ color: INK }}>
+                    <InkArt
+                      src={SVG.wingRight.src}
+                      ratio={SVG.wingRight.ratio}
+                      draw={{ ...WING_DRAW, delay: at(LOAD.wings + LOAD.wingStagger) }}
+                    />
                   </div>
                 </DragArt>
               </div>
