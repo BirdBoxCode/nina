@@ -10,6 +10,7 @@ import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconOverlay, navIconWi
 import { liftShadow } from '@/lib/utils'
 import { PALETTE } from '@/lib/palette'
 import { HomeIntro, useIntroOnce, type IntroLayout } from '@/components/HomeIntro'
+import { InkArt } from '@/components/InkArt'
 
 /* Real-3D wordmark; WebGL, so client only. The flat PNG holds the layout until it is drawn. */
 const NinaroLogo3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.NinaroLogo3D), {
@@ -74,6 +75,14 @@ const ART = {
   marking2: '/images/assets/components/marking-2.png',
   wingLeft: '/images/assets/components/wings-left.png',
   wingRight: '/images/assets/components/wings-right.png',
+}
+
+/* Vector line art (Paper, "SVG Frame"), coloured by CSS. Preferred over the PNGs above. */
+const SVG = {
+  wingLeft: { src: '/images/assets/svg/wings-left.svg', ratio: 2400 / 844 },
+  wingRight: { src: '/images/assets/svg/wings-right.svg', ratio: 2400 / 842 },
+  dragon: { src: '/images/assets/svg/dragon.svg', ratio: 2400 / 1395 },
+  sword: { src: '/images/assets/svg/sword.svg', ratio: 804 / 1953.036 },
 }
 
 /* Crest/wordmark width; the wings are sized off it so they keep the design's proportion. */
@@ -1429,7 +1438,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                   a wrapper so it never meets the unfurl animation on the image. */}
               <div style={{ ...WING, right: WING_GAP, filter: SHADOW.wings, transition: SHADOW_EASE }}>
                 <DragArt
-                  src={ART.wingLeft}
+                  src={SVG.wingLeft.src}
                   bounds={heroRef}
                   overhang={0}
                   returnAfter={WING_RETURN}
@@ -1437,21 +1446,14 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                   calm={reducedMotion}
                   onHot={onLeftWingHot}
                 >
-                  <Image
-                    src={ART.wingLeft}
-                    alt=""
-                    width={1009}
-                    height={355}
-                    priority
-                    draggable={false}
-                    className="block h-auto w-full"
-                    style={{ animation: `nr-unfurl-left 1.4s ${UNFURL_EASE} ${at(LOAD.wings)} both` }}
-                  />
+                  <div style={{ color: INK, animation: `nr-unfurl-left 1.4s ${UNFURL_EASE} ${at(LOAD.wings)} both` }}>
+                    <InkArt src={SVG.wingLeft.src} ratio={SVG.wingLeft.ratio} />
+                  </div>
                 </DragArt>
               </div>
               <div style={{ ...WING, left: WING_GAP, filter: SHADOW.wings, transition: SHADOW_EASE }}>
                 <DragArt
-                  src={ART.wingRight}
+                  src={SVG.wingRight.src}
                   bounds={heroRef}
                   overhang={0}
                   returnAfter={WING_RETURN}
@@ -1459,16 +1461,9 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                   calm={reducedMotion}
                   onHot={onRightWingHot}
                 >
-                  <Image
-                    src={ART.wingRight}
-                    alt=""
-                    width={1007}
-                    height={353}
-                    priority
-                    draggable={false}
-                    className="block h-auto w-full"
-                    style={{ animation: `nr-unfurl-right 1.4s ${UNFURL_EASE} ${at(LOAD.wings + LOAD.wingStagger)} both` }}
-                  />
+                  <div style={{ color: INK, animation: `nr-unfurl-right 1.4s ${UNFURL_EASE} ${at(LOAD.wings + LOAD.wingStagger)} both` }}>
+                    <InkArt src={SVG.wingRight.src} ratio={SVG.wingRight.ratio} />
+                  </div>
                 </DragArt>
               </div>
             </div>
