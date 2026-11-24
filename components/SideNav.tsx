@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import { TransitionLink } from '@/components/PageTransition'
 import { liftShadow } from '@/lib/utils'
-import { PALETTE } from '@/lib/palette'
+import { PALETTE, PIGMENT } from '@/lib/palette'
 
 /* 3D menu icons (WebGL, client only); the flat PNG holds the layout until they are drawn. */
 const MenuIcons3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.MenuIcons3D), {
@@ -19,7 +19,7 @@ const ICON_SHADOW = liftShadow(1, 2.5, 2.5, 4, 0.4)
 export const PAPER = PALETTE.paper
 const INK = PALETTE.inkSoft
 const ACCENT = PALETTE.ink
-const PANEL = '#DBDCC1'
+const PANEL = PIGMENT.sageMist
 const EASE = 'cubic-bezier(.2,.7,.2,1)'
 
 const ICONS = '/images/assets/icons/purple-icons.png'
@@ -295,7 +295,7 @@ export function SideNav() {
         onClick={() => setOpen(false)}
         className="fixed inset-0 z-[64] motion-reduce:transition-none"
         style={{
-          background: 'rgba(60, 56, 50, .18)',
+          background: 'rgba(77, 69, 96, .18)',
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
           transition: 'opacity .5s ease',
@@ -314,7 +314,7 @@ export function SideNav() {
           // 48px of air between the icons and the NINARÒ wordmark.
           paddingTop: `calc(${BAR_H} + 48px)`,
           transform: open ? 'none' : 'translateX(-100%)',
-          boxShadow: open ? '0 0 40px rgba(60, 56, 50, .12)' : 'none',
+          boxShadow: open ? '0 0 40px rgba(77, 69, 96, .12)' : 'none',
           transition: `transform .5s ${EASE}, box-shadow .5s ease`,
         }}
       >
@@ -338,7 +338,7 @@ export function SideNav() {
                   tabIndex={open ? 0 : -1}
                   aria-current={active ? 'page' : undefined}
                   onClick={() => setOpen(false)}
-                  className="inline-block hover:text-[#3A3631]! hover:tracking-[.04em]"
+                  className="inline-block hover:text-[#4D4560]! hover:tracking-[.04em]"
                   style={linkStyle(active, i + 1)}
                 >
                   {l.label}
@@ -360,7 +360,7 @@ export function SideNav() {
           rel="noopener"
           tabIndex={open ? 0 : -1}
           onClick={() => setOpen(false)}
-          className="inline-block self-start hover:text-[#3A3631]! hover:tracking-[.04em]"
+          className="inline-block self-start hover:text-[#4D4560]! hover:tracking-[.04em]"
           style={linkStyle(false, LINKS.length + 1)}
         >
           Tattoo ↗

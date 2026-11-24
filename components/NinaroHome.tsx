@@ -1974,7 +1974,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                 </div>
                 <div className="flex items-baseline justify-between gap-4 pt-[13px]">
                   <span
-                    className="transition-colors duration-300 group-hover:text-[#3A3631]"
+                    className="transition-colors duration-300 group-hover:text-[#4D4560]"
                     style={{
                       fontFamily: 'var(--font-sans)',
                       fontWeight: 500,
@@ -2013,17 +2013,17 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             style={{ width: 'clamp(78px, 8vw, 104px)' }}
           />
           <div className="flex gap-7">
-            <TransitionLink href="/bio-contact" className="hover:text-[#3A3631]" style={MICRO}>
+            <TransitionLink href="/bio-contact" className="hover:text-[#4D4560]" style={MICRO}>
               About
             </TransitionLink>
-            <TransitionLink href="/shop" className="hover:text-[#3A3631]" style={MICRO}>
+            <TransitionLink href="/shop" className="hover:text-[#4D4560]" style={MICRO}>
               Shop
             </TransitionLink>
             <a
               href="https://lineacruda.com"
               target="_blank"
               rel="noopener"
-              className="hover:text-[#3A3631]"
+              className="hover:text-[#4D4560]"
               style={MICRO}
             >
               Tattoos ↗

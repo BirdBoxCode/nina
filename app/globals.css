@@ -192,12 +192,12 @@
 }
 
 .nr-home ::selection {
-  background: rgba(142, 144, 196, 0.28);
-  color: #3A3631;
+  background: rgba(170, 170, 199, 0.4);
+  color: #4D4560;
 }
 
 .nr-home *:focus-visible {
-  outline: 2px solid #8E90C4;
+  outline: 2px solid #8E97C0;
   outline-offset: 3px;
 }
 

@@ -298,7 +298,7 @@ export function HomeIntro({
                   mixBlendMode: 'multiply',
                   filter:
                     'grayscale(1) contrast(.8) brightness(1.2) ' +
-                    'drop-shadow(0 1px 0 rgba(255,255,255,.8)) drop-shadow(0 -1px 0 rgba(60,56,50,.25))',
+                    'drop-shadow(0 1px 0 rgba(255,255,255,.8)) drop-shadow(0 -1px 0 rgba(77,69,96,.25))',
                 }}
               />
             </div>

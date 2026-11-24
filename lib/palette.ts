@@ -1,31 +1,68 @@
 /**
- * Organic palette: ink on paper. One warm ink in three strengths for the type and lines,
- * the paper in three tones for ground and surfaces, and the crest's lavender as the single
- * accent, used sparingly (focus, selection, the tip of a travelling line).
+ * Pigment palette: one sheet of paper with pigment moving through it, and no black anywhere.
+ * The hues come from the artist's own originals (the flower icons, the crest's iridescence,
+ * the wordmark), so every token below either is one of those colours or sits between them.
  */
-export const PALETTE = {
-  /** Headings, the hero name, key lines and the nearest line art. */
-  ink: '#3A3631',
-  /** Body copy, roles and menu labels at rest. */
-  inkSoft: '#5E5951',
-  /** Small uppercase labels; still 4.5:1 on paper at 10px. */
-  inkMuted: '#6F6A61',
-  /** Labels stepping back while a sibling is hovered. */
-  inkFaint: '#ABA598',
+export const PIGMENT = {
   /** The main ground. */
   paper: '#EFEBE2',
   /** Raised surfaces: the nav band, card frames. */
   paperLight: '#F6F3EC',
-  /** Recessed areas: empty image frames, the footer band. */
-  paperDeep: '#E4DFD3',
-  /** Hairlines. */
-  rule: '#CFC9BC',
-  /** The crest's side colour. */
-  lavender: '#8E90C4',
+  /** Recessed areas: empty frames, the footer band. */
+  linen: '#E3DDD0',
+  /** The wordmark lavender. Wings, blooms, light lines on the dark section. */
+  lavenderMist: '#C5C8F5',
+  /** The icon petals' lavender. */
+  petal: '#AAAAC7',
+  /** The icons' cool grey ring; a neutral for hairlines and stepped-back labels. */
+  ash: '#9F9FA5',
+  /** Muted crest blue, for focus rings and accents on the dark section. */
+  periwinkle: '#8E97C0',
+  /** The crest's violet. Art and large type only (4.1:1 on paper). */
+  duskViolet: '#696D9C',
+  /** Small labels: the crest violet deepened to 4.5:1 on paper. */
+  violetLabel: '#64688F',
+  /** Text, headings and the nearest line art (7.6:1 on paper). */
+  plumInk: '#4D4560',
+  /** The dark (dusk) section. */
+  nightViolet: '#2F2E45',
+  /** Greyed sage, like the icons. */
+  sageMist: '#CBCCBC',
+  /** The green-icon petals. */
+  sage: '#969788',
+  /** The flower centres. */
+  olive: '#919276',
+  /** The crest's olive. */
+  moss: '#87856B',
+} as const
+
+/**
+ * The roles the components use. Kept under their earlier names so the components keep
+ * one vocabulary; the values are all pigment tokens now.
+ */
+export const PALETTE = {
+  /** Headings, the hero name, key lines and the nearest line art. */
+  ink: PIGMENT.plumInk,
+  /** Body copy, roles and menu labels at rest (5.7:1 on paper). */
+  inkSoft: '#5E5778',
+  /** Small uppercase labels; 4.5:1 on paper at 10px. */
+  inkMuted: PIGMENT.violetLabel,
+  /** Labels stepping back while a sibling is hovered. */
+  inkFaint: PIGMENT.ash,
+  /** The main ground. */
+  paper: PIGMENT.paper,
+  /** Raised surfaces. */
+  paperLight: PIGMENT.paperLight,
+  /** Recessed areas. */
+  paperDeep: PIGMENT.linen,
+  /** Hairlines: linen leaning toward the icons' grey. */
+  rule: '#D3CFCB',
+  /** Accent for focus and selection. */
+  lavender: PIGMENT.periwinkle,
 } as const
 
 /** The ink as an rgb triple, for shadows and translucent washes. */
-export const INK_RGB = '58, 54, 49'
+export const INK_RGB = '77, 69, 96'
 
 /**
  * Depth planes for the line art. Further back is fainter, unshadowed, slower on scroll and
