@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js'
@@ -8,6 +8,9 @@ import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js'
 /* Canvas overhang past the art box on every side (fraction of its size), so the sides and
    the turn are never clipped. The camera frames the art to the inner box. */
 const BLEED = 0.18
+/* After a lost 3D context: wait this long, then rebuild; give up after this many tries. */
+const REBUILD_DELAY = 800
+const MAX_REBUILDS = 3
 const FOV = 30
 
 /* How fast a turn settles. Later parts settle slower, so a column ripples rather than
@@ -231,6 +234,7 @@ function Extruded3D({
   visible,
   shadow,
   onReady,
+  onLost,
 }: {
   spec: Extrusion
   /** Cursor offset, -1..1. Omit to have the art track the cursor against its own centre. */
@@ -239,6 +243,9 @@ function Extruded3D({
   /** CSS drop-shadow filter for the lift off the paper. */
   shadow?: string
   onReady: () => void
+  /** True when the browser drops the 3D context (the page shows the flat art again),
+      false once a rebuilt canvas has drawn. */
+  onLost?: (lost: boolean) => void
 }) {
   const wrap = useRef<HTMLDivElement | null>(null)
   const target = useRef<Glide>(glide ?? { x: 0, y: 0 })
@@ -252,6 +259,31 @@ function Extruded3D({
   // No cursor to follow: the light wanders on its own instead.
   const [drift] = useState(() => !window.matchMedia('(hover: hover) and (pointer: fine)').matches)
   const [frame, setFrame] = useState<(() => void) | null>(null)
+  // Context loss (GPU reset, sleep, memory pressure): hide the canvas so the browser's
+  // broken-canvas placeholder never shows, then rebuild it, a few times at most.
+  const [lost, setLost] = useState(false)
+  const [build, setBuild] = useState(0)
+  const alive = useRef(true)
+  const lostRef = useRef(false)
+  const rebuilds = useRef(0)
+  const onLostRef = useRef(onLost)
+  useEffect(() => {
+    onLostRef.current = onLost
+  })
+  useEffect(() => {
+    alive.current = true
+    return () => {
+      alive.current = false
+    }
+  }, [])
+  const handleReady = useCallback(() => {
+    if (lostRef.current) {
+      lostRef.current = false
+      setLost(false)
+      onLostRef.current?.(false)
+    }
+    onReady()
+  }, [onReady])
 
   useEffect(() => {
     if (!glide) return
@@ -302,12 +334,15 @@ function Extruded3D({
       className="pointer-events-none absolute"
       style={{
         inset: `-${BLEED * 100}%`,
-        opacity: visible ? 1 : 0,
+        opacity: visible && !lost ? 1 : 0,
+        // Hidden at once on a lost context: a fade would show the broken-canvas placeholder.
+        visibility: lost ? 'hidden' : undefined,
         filter: shadow,
         transition: 'opacity .6s ease, filter .9s cubic-bezier(.2,.7,.2,1)',
       }}
     >
       <Canvas
+        key={build}
         flat
         dpr={[1, 2]}
         frameloop={!onScreen ? 'never' : drift ? 'always' : 'demand'}
@@ -322,10 +357,29 @@ function Extruded3D({
           near: 10,
           far: spec.h * 10,
         }}
-        onCreated={(s) => setFrame(() => s.invalidate)}
+        onCreated={(s) => {
+          setFrame(() => s.invalidate)
+          s.gl.domElement.addEventListener(
+            'webglcontextlost',
+            (e) => {
+              e.preventDefault()
+              if (!alive.current) return
+              lostRef.current = true
+              setLost(true)
+              onLostRef.current?.(true)
+              // One rebuild per loss; past the limit the flat art simply stays.
+              if (rebuilds.current >= MAX_REBUILDS) return
+              rebuilds.current += 1
+              setTimeout(() => {
+                if (alive.current) setBuild((b) => b + 1)
+              }, REBUILD_DELAY)
+            },
+            { once: true },
+          )
+        }}
       >
         <Suspense fallback={null}>
-          <Extruded spec={spec} target={target} drift={drift} onReady={onReady} />
+          <Extruded spec={spec} target={target} drift={drift} onReady={handleReady} />
         </Suspense>
       </Canvas>
     </div>
@@ -338,16 +392,28 @@ export function NinaroLogo3D(props: {
   visible: boolean
   shadow?: string
   onReady: () => void
+  onLost?: (lost: boolean) => void
 }) {
   return <Extruded3D spec={WORDMARK} {...props} />
 }
 
 /** Opera Senza crest in 3D. */
-export function Crest3D(props: { glide: Glide; visible: boolean; shadow?: string; onReady: () => void }) {
+export function Crest3D(props: {
+  glide: Glide
+  visible: boolean
+  shadow?: string
+  onReady: () => void
+  onLost?: (lost: boolean) => void
+}) {
   return <Extruded3D spec={CREST} {...props} />
 }
 
 /** The three-flower menu icon column in 3D; each flower turns on its own. */
-export function MenuIcons3D(props: { visible: boolean; shadow?: string; onReady: () => void }) {
+export function MenuIcons3D(props: {
+  visible: boolean
+  shadow?: string
+  onReady: () => void
+  onLost?: (lost: boolean) => void
+}) {
   return <Extruded3D spec={MENU_ICONS} {...props} />
 }

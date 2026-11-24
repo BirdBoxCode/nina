@@ -28,7 +28,7 @@ export default async function AboutPage() {
 
   return (
     // Paper ground and ink to match the home page
-    <div className="min-h-screen" style={{ background: '#EFEBE2', color: '#5C5970' }}>
+    <div className="min-h-screen" style={{ background: '#EFEBE2', color: '#76736B' }}>
       <SideNav />
       <PageContainer>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center min-h-[60vh]">

@@ -10,7 +10,7 @@ export default async function ContactPage() {
 
   return (
     // Paper ground and ink to match the home page
-    <div className="min-h-screen" style={{ background: '#EFEBE2', color: '#5C5970' }}>
+    <div className="min-h-screen" style={{ background: '#EFEBE2', color: '#76736B' }}>
       <SideNav />
       <PageContainer className="flex items-center justify-center min-h-[calc(100vh-6rem)]">
         <div className="w-full max-w-xl">

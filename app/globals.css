@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
-/* Adobe Typekit: Neutronic Rounded (100/400/700) + Neutronic Rounded Black (900).
+/* Adobe Typekit: Neutronic Rounded, 100–900. Display text uses Medium (500), set per element.
    Stylesheet is linked from app/layout.tsx. */
 @theme {
   --font-sans: "neutronic-rounded", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "neutronic-rounded-black", "neutronic-rounded", ui-sans-serif, sans-serif;
+  --font-display: "neutronic-rounded", ui-sans-serif, sans-serif;
 }
 
 :root {
@@ -72,6 +72,11 @@
   from { opacity: 0; transform: translateY(14px) scale(.94); filter: blur(6px); }
   to   { opacity: 1; transform: none; filter: none; }
 }
+/* After the intro: the crest settles out of its imprint, barely moving (NinaroHome). */
+@keyframes nr-crest-settle {
+  from { opacity: 0; transform: translateY(4px) scale(.985); filter: blur(2px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
 @keyframes nr-bar-in {
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: none; }
@@ -97,14 +102,75 @@
   0%, 100% { transform: translateY(0); opacity: .5; }
   50%      { transform: translateY(7px); opacity: 1; }
 }
+/* Hero name: each letter rises from below its baseline, tilted, and settles.
+   --rise and --tilt are set per letter. */
+@keyframes nr-letter-in {
+  from { opacity: 0; transform: translateY(var(--rise, .5em)) rotate(var(--tilt, 0deg)); }
+  to   { opacity: 1; transform: none; }
+}
+/* Hero name at rest: a barely-there breath, offset per letter. */
+@keyframes nr-letter-idle {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-1.5px); }
+}
+/* Hero roles: words roll up through their own clipped box. */
+@keyframes nr-word-in {
+  from { transform: translateY(115%); }
+  to   { transform: none; }
+}
+@keyframes nr-word-out {
+  from { transform: none; }
+  to   { transform: translateY(-115%); }
+}
+
+/* Home intro (components/HomeIntro.tsx). Opacity and transform only. */
+@keyframes nr-intro-fade {
+  to { opacity: 0; }
+}
+@keyframes nr-intro-open {
+  from { transform: scale(1); }
+  to   { transform: scale(9); }
+}
+@keyframes nr-intro-imprint-in {
+  from { opacity: 0; transform: scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes nr-intro-imprint-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: scale(1.08); }
+}
+@keyframes nr-intro-outline {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes nr-intro-fill {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes nr-intro-name-out {
+  to { opacity: 0; transform: translateY(-.06em); }
+}
+@keyframes nr-intro-foot-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes nr-intro-foot-out {
+  to { opacity: 0; transform: translateY(22px); }
+}
+/* While the intro is up the hero's entrance waits, held at its first frame. */
+.nr-home [data-hold] *,
+.nr-home [data-hold] *::before,
+.nr-home [data-hold] *::after {
+  animation-play-state: paused !important;
+}
 
 .nr-home ::selection {
-  background: rgba(145, 132, 217, 0.28);
-  color: #5C5970;
+  background: rgba(118, 115, 107, 0.22);
+  color: #76736B;
 }
 
 .nr-home *:focus-visible {
-  outline: 2px solid #796cbf;
+  outline: 2px solid #76736B;
   outline-offset: 3px;
 }
 
