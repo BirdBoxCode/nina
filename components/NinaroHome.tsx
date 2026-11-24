@@ -68,13 +68,9 @@ const ART = {
   menuIcons: '/images/assets/icons/purple-icons.png',
   playIcons: '/images/assets/icons/green-icons.png',
   bull: '/images/assets/components/bull.png',
-  dragon: '/images/assets/components/dragon.png',
   shell: '/images/assets/components/shell.png',
-  sword: '/images/assets/components/sword.png',
   marking: '/images/assets/components/marking.png',
   marking2: '/images/assets/components/marking-2.png',
-  wingLeft: '/images/assets/components/wings-left.png',
-  wingRight: '/images/assets/components/wings-right.png',
 }
 
 /* Vector line art (Paper, "SVG Frame"), coloured by CSS. Preferred over the PNGs above. */
@@ -449,16 +445,16 @@ function DragArt({
   )
 }
 
-/* marking-2 ships as black line art, unlike the rest of the set; it only needs the multiply. */
-const DARK_GHOSTS = new Set<string>([ART.marking2])
+/* marking-2 and the SVGs draw dark line art, unlike the white PNGs; they only need the multiply. */
+const DARK_GHOSTS = new Set<string>([ART.marking2, SVG.dragon.src, SVG.sword.src])
 
 const CATS = [
   { label: 'Murals', href: '/walls', left: '25%', top: '21%', rot: 0, ghost: ART.bull },
   { label: 'Paintings', href: '/paintings', left: '20%', top: '36%', rot: 0, ghost: ART.marking },
-  { label: 'Illustrations', href: '/illustration', left: '17%', top: '53%', rot: 0, ghost: ART.dragon },
+  { label: 'Illustrations', href: '/illustration', left: '17%', top: '53%', rot: 0, ghost: SVG.dragon.src },
   { label: 'Installations', href: '/installations', left: '18%', top: '68%', rot: 0, ghost: ART.shell },
   { label: 'Stage Design', href: '/stage-design', left: '75%', top: '21%', rot: 0, ghost: ART.marking2 },
-  { label: 'Workshops', href: '/workshops', left: '80%', top: '36%', rot: 0, ghost: ART.sword },
+  { label: 'Workshops', href: '/workshops', left: '80%', top: '36%', rot: 0, ghost: SVG.sword.src },
   { label: 'About', href: '/bio-contact', left: '83%', top: '53%', rot: 0, ghost: ART.marking },
   { label: 'Shop', href: '/shop', left: '82%', top: '68%', rot: 0, ghost: ART.shell },
 ] as const
@@ -1900,8 +1896,8 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
           >
             {/* Drag sits inside the parallax node: the scroll effect writes that node's
                 transform directly, so the two offsets add instead of overwriting. */}
-            <DragArt src={ART.dragon} bounds={artLayerRef} bounce="viewport" enabled={canDrag} calm={reducedMotion} opacity={0.14} hint>
-              <Image src={ART.dragon} alt="" width={1200} height={698} draggable={false} className="block h-auto w-full" style={GHOST_FILTER} />
+            <DragArt src={SVG.dragon.src} bounds={artLayerRef} bounce="viewport" enabled={canDrag} calm={reducedMotion} opacity={0.14} hint>
+              <InkArt src={SVG.dragon.src} ratio={SVG.dragon.ratio} style={{ color: INK }} />
             </DragArt>
           </div>
           <div
@@ -1910,7 +1906,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             style={{ right: '-4vw', height: narrow ? '60vh' : '90vh', willChange: 'transform' }}
           >
             <DragArt
-              src={ART.sword}
+              src={SVG.sword.src}
               bounds={artLayerRef}
               bounce="viewport"
               enabled={canDrag}
@@ -1919,7 +1915,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
               hint
               className="h-full"
             >
-              <Image src={ART.sword} alt="" width={494} height={1200} draggable={false} className="block h-full w-auto" style={GHOST_FILTER} />
+              <InkArt src={SVG.sword.src} ratio={SVG.sword.ratio} fit="height" style={{ color: INK }} />
             </DragArt>
           </div>
         </div>
