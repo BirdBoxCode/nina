@@ -7,9 +7,10 @@ import Image from 'next/image'
  * Home intro. Covers the hero on a full page load (first visit or refresh, never on an
  * in-app navigation) while the 3D pieces build, then opens onto it.
  *
- * Paper ground, a faint imprint of the Opera Senza crest and NINA ROSSI drawn in outline
- * then filled, each placed exactly where the hero's own crest and name sit, so the hand-off
- * lands in place. Below, a "Getting ready" counter and a rolling status line.
+ * Dark ink ground with paper-coloured type: a faint imprint of the Opera Senza crest and
+ * NINA ROSSI drawn in outline then filled, each placed exactly where the hero's own crest
+ * and name sit. When ready it inverts (paper ground, ink type) and opens onto the hero, so
+ * the hand-off lands in place. Below, a "Getting ready" counter and a rolling status line.
  *
  * Every moving part animates opacity or transform only, so the browser can keep it smooth
  * while the main thread is busy building the 3D. The counter is the exception (it is text).
@@ -18,18 +19,29 @@ import Image from 'next/image'
 /* Shared with NinaroHome's tokens; kept here to avoid a circular import. */
 const PAPER = '#EFEBE2'
 const INK = '#76736B'
-const MUTED_LIGHT = '#8F8B82'
-const RULE_LIGHT = '#D6D2C9'
+/* While loading the intro is dark: an ink ground with paper-coloured type. */
+const PAPER_SOFT = 'rgba(239,235,226,.62)'
+const PAPER_FAINT = 'rgba(239,235,226,.22)'
+/* Intro ground: the ink's hue, deepened so the paper-coloured type reads clearly. */
+const INTRO_GROUND = '#58554E'
 const EASE = 'cubic-bezier(.22,1,.36,1)'
 const OPEN_EASE = 'cubic-bezier(.76,0,.24,1)'
 
 /* Shown at least this long so it never flashes, and never longer than the cap. */
-const MIN_MS = 1800
+/* The minimum covers the full sequence: name drawn and filled, then the first role in. */
+const MIN_MS = 3000
 const MAX_MS = 4500
+/* Inversion: dark ground to paper, beige type to ink. The hero's entrance starts at
+   INVERT_HANDOFF, overlapping the end of it. */
+const INVERT_MS = 900
+const INVERT_HANDOFF = 600
 /* Exit: the paper opens from the crest; the layer is removed once it has faded. */
-const EXIT_MS = 1400
+const EXIT_MS = 2000
 
-const PHRASES = ['Preparing the paper', 'Mixing the ink', 'Opening the studio']
+/* One status line: rolls in once and stays until the loader fades at the inversion. */
+const PHRASES = ['Preparing the paper']
+/* The first role rolls in once NINA ROSSI has filled. */
+const ROLE_AT = 2.0
 
 /* Module scope survives in-app navigation and resets on a full load or refresh. */
 let introShown = false
@@ -46,12 +58,15 @@ export function useIntroOnce() {
 export type IntroLayout = {
   crest: { cx: number; cy: number; w: number; h: number }
   name: { left: number; top: number; width: number; fontSize: number; align: 'left' | 'center' }
+  roles: { left: number; top: number; width: number; fontSize: number; fontWeight: number; justify: string }
 }
 
 export function HomeIntro({
   progress,
   measure,
   words,
+  role,
+  rolesEl,
   crestSrc,
   onOpen,
 }: {
@@ -60,16 +75,21 @@ export function HomeIntro({
   /** Where the hero's crest and name rest, in viewport px; null until laid out. */
   measure: () => IntroLayout | null
   words: readonly { text: string; weight: number }[]
+  /** The hero's first role; rolls in after the name and is left in place for the hero. */
+  role: string
+  /** The hero's roles; followed every frame, since the hero's cursor depth drifts them. */
+  rolesEl: React.RefObject<HTMLElement | null>
   crestSrc: string
   /** Called as the paper starts to open: the hero's entrance starts here. */
   onOpen: () => void
 }) {
   const [layout, setLayout] = useState<IntroLayout | null>(null)
   const [count, setCount] = useState(0)
-  const [phase, setPhase] = useState<'loading' | 'opening' | 'gone'>('loading')
+  const [phase, setPhase] = useState<'loading' | 'inverting' | 'opening' | 'gone'>('loading')
   const progressRef = useRef(progress)
   const onOpenRef = useRef(onOpen)
   const measureRef = useRef(measure)
+  const rolesCopyRef = useRef<HTMLParagraphElement | null>(null)
 
   useEffect(() => {
     progressRef.current = progress
@@ -77,23 +97,56 @@ export function HomeIntro({
     measureRef.current = measure
   })
 
-  // Place the imprint and the name over their hero counterparts; again on resize.
+  // Place the imprint, name and role over their hero counterparts, checked every frame:
+  // the hero shifts when the scroll lock removes the scrollbar, when fonts land and on
+  // resize. State only updates when something moved by more than half a pixel.
   useEffect(() => {
-    let frame = requestAnimationFrame(() => setLayout(measureRef.current()))
-    const onResize = () => {
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(() => setLayout(measureRef.current()))
+    let frame = 0
+    let last: IntroLayout | null = null
+    const moved = (a: IntroLayout, b: IntroLayout | null) => {
+      if (!b) return true
+      const near = (x: number, y: number) => Math.abs(x - y) <= 0.5
+      return !(
+        near(a.crest.cx, b.crest.cx) && near(a.crest.cy, b.crest.cy) &&
+        near(a.crest.w, b.crest.w) && near(a.crest.h, b.crest.h) &&
+        near(a.name.left, b.name.left) && near(a.name.top, b.name.top) &&
+        near(a.name.width, b.name.width) && near(a.name.fontSize, b.name.fontSize) &&
+        a.name.align === b.name.align &&
+        near(a.roles.width, b.roles.width) && near(a.roles.fontSize, b.roles.fontSize) &&
+        a.roles.fontWeight === b.roles.fontWeight && a.roles.justify === b.roles.justify
+      )
     }
-    window.addEventListener('resize', onResize)
-    return () => {
-      cancelAnimationFrame(frame)
-      window.removeEventListener('resize', onResize)
+    const check = () => {
+      const next = measureRef.current()
+      if (next && moved(next, last)) {
+        last = next
+        setLayout(next)
+      }
+      frame = requestAnimationFrame(check)
     }
+    frame = requestAnimationFrame(check)
+    return () => cancelAnimationFrame(frame)
   }, [])
+
+  // Keep the role copy exactly over the hero's, which drifts a few px with the cursor.
+  useEffect(() => {
+    let frame = 0
+    const follow = () => {
+      const src = rolesEl.current?.getBoundingClientRect()
+      const copy = rolesCopyRef.current
+      if (src && copy) {
+        copy.style.left = `${src.left}px`
+        copy.style.top = `${src.top}px`
+      }
+      frame = requestAnimationFrame(follow)
+    }
+    frame = requestAnimationFrame(follow)
+    return () => cancelAnimationFrame(frame)
+  }, [rolesEl])
 
   // No scrolling under the intro.
   useEffect(() => {
-    if (phase !== 'loading') return
+    if (phase === 'opening' || phase === 'gone') return
     const root = document.documentElement
     const prev = root.style.overflow
     root.style.overflow = 'hidden'
@@ -117,8 +170,7 @@ export function HomeIntro({
       if (target >= 1 && 100 - shown < 0.6) shown = 100
       setCount(Math.floor(shown))
       if (shown >= 100 && t >= MIN_MS) {
-        setPhase('opening')
-        onOpenRef.current()
+        setPhase('inverting')
         return
       }
       frame = requestAnimationFrame(tick)
@@ -128,15 +180,27 @@ export function HomeIntro({
   }, [])
 
   useEffect(() => {
-    if (phase !== 'opening') return
-    const id = setTimeout(() => setPhase('gone'), EXIT_MS)
-    return () => clearTimeout(id)
+    if (phase === 'inverting') {
+      const id = setTimeout(() => {
+        setPhase('opening')
+        onOpenRef.current()
+      }, INVERT_HANDOFF)
+      return () => clearTimeout(id)
+    }
+    if (phase === 'opening') {
+      const id = setTimeout(() => setPhase('gone'), EXIT_MS)
+      return () => clearTimeout(id)
+    }
   }, [phase])
 
   if (phase === 'gone') return null
 
   const opening = phase === 'opening'
-  const phrase = count >= 100 ? 2 : count >= 55 ? 1 : 0
+  // From the inversion on: the same animation strings stay set through the opening, so
+  // nothing restarts when the phase moves on.
+  const inverted = phase !== 'loading'
+  const invert = `${INVERT_MS / 1000}s ease both`
+  const phrase = 0
   // The opening is a soft hole in a paper sheet, centred on the crest and grown by scale
   // (a transform), sized just past the farthest viewport corner.
   const c = layout?.crest
@@ -154,7 +218,7 @@ export function HomeIntro({
       style={{
         pointerEvents: opening ? 'none' : 'auto',
         opacity: opening ? 0 : 1,
-        transition: opening ? 'opacity .45s ease .8s' : undefined,
+        transition: opening ? 'opacity .6s ease 1.3s' : undefined,
       }}
     >
       {/* Sheet with the opening; only seen once the solid ground fades at the exit. */}
@@ -171,16 +235,22 @@ export function HomeIntro({
           }}
         />
       )}
-      {/* Solid ground */}
+      {/* Paper ground — what the dark ground inverts to */}
       <div
         className="absolute inset-0"
         style={{ background: PAPER, animation: opening ? 'nr-intro-fade .35s ease both' : undefined }}
       />
+      {/* Dark ground while loading; fades to the paper at the inversion */}
+      <div
+        className="absolute inset-0"
+        style={{ background: INTRO_GROUND, animation: inverted ? `nr-intro-fade ${invert}` : undefined }}
+      />
 
       {layout && (
         <>
-          {/* Opera Senza imprint — pressed into the paper: faint, a light lower edge and a
-              darker upper one. Static filters; only the wrapper moves. */}
+          {/* Opera Senza imprint. Static filters; only the wrappers move. On the dark
+              ground a faint light impression; at the inversion it crossfades into the
+              same crest pressed into the paper (light lower edge, darker upper one). */}
           <div
             className="absolute"
             style={{
@@ -188,25 +258,46 @@ export function HomeIntro({
               top: layout.crest.cy - layout.crest.h / 2,
               width: layout.crest.w,
               animation: opening
-                ? `nr-intro-imprint-out 1s ${EASE} both`
+                ? `nr-intro-fade 1.8s ease both`
                 : `nr-intro-imprint-in 1.6s ${EASE} .1s both`,
             }}
           >
-            <Image
-              src={crestSrc}
-              alt=""
-              width={1192}
-              height={1328}
-              priority
-              className="block h-auto w-full"
-              style={{
-                opacity: 0.16,
-                mixBlendMode: 'multiply',
-                filter:
-                  'grayscale(1) contrast(.8) brightness(1.2) ' +
-                  'drop-shadow(0 1px 0 rgba(255,255,255,.8)) drop-shadow(0 -1px 0 rgba(60,56,50,.25))',
-              }}
-            />
+            <div style={{ animation: inverted ? `nr-intro-fade ${invert}` : undefined }}>
+              <Image
+                src={crestSrc}
+                alt=""
+                width={1192}
+                height={1328}
+                priority
+                className="block h-auto w-full"
+                style={{
+                  opacity: 0.14,
+                  mixBlendMode: 'screen',
+                  filter:
+                    'grayscale(1) brightness(1.5) contrast(.85) ' +
+                    'drop-shadow(0 -1px 0 rgba(255,255,255,.35)) drop-shadow(0 1px 0 rgba(40,38,34,.3))',
+                }}
+              />
+            </div>
+            <div
+              className="absolute inset-0"
+              style={{ opacity: 0, animation: inverted ? `nr-intro-fill ${invert}` : undefined }}
+            >
+              <Image
+                src={crestSrc}
+                alt=""
+                width={1192}
+                height={1328}
+                className="block h-auto w-full"
+                style={{
+                  opacity: 0.16,
+                  mixBlendMode: 'multiply',
+                  filter:
+                    'grayscale(1) contrast(.8) brightness(1.2) ' +
+                    'drop-shadow(0 1px 0 rgba(255,255,255,.8)) drop-shadow(0 -1px 0 rgba(60,56,50,.25))',
+                }}
+              />
+            </div>
           </div>
 
           {/* NINA ROSSI — outline first, then a soft left-to-right fill, letter by letter */}
@@ -221,7 +312,6 @@ export function HomeIntro({
               fontSize: layout.name.fontSize,
               lineHeight: 1,
               letterSpacing: '.02em',
-              animation: opening ? `nr-intro-name-out .55s ${EASE} both` : undefined,
             }}
           >
             {words.map((w, wi) => (
@@ -238,7 +328,7 @@ export function HomeIntro({
                           className="block"
                           style={{
                             color: 'transparent',
-                            WebkitTextStroke: '1px rgba(118,115,107,.4)',
+                            WebkitTextStroke: '1px rgba(239,235,226,.4)',
                             animation: `nr-intro-outline 1.1s ease ${outlineAt.toFixed(2)}s both`,
                           }}
                         >
@@ -246,7 +336,14 @@ export function HomeIntro({
                         </span>
                         <span
                           className="absolute inset-0 block"
-                          style={{ color: INK, animation: `nr-intro-fill .9s ease ${fillAt.toFixed(2)}s both` }}
+                          style={{ color: PAPER, animation: `nr-intro-fill .9s ease ${fillAt.toFixed(2)}s both` }}
+                        >
+                          {ch}
+                        </span>
+                        {/* Ink copy over the paper fill — fades in at the inversion */}
+                        <span
+                          className="absolute inset-0 block"
+                          style={{ color: INK, opacity: 0, animation: inverted ? `nr-intro-fill ${invert}` : undefined }}
                         >
                           {ch}
                         </span>
@@ -256,6 +353,46 @@ export function HomeIntro({
                 </span>
               </React.Fragment>
             ))}
+          </p>
+
+          {/* First role — rolls in word by word after the name, over the hero's own, which
+              is already in place underneath when the intro opens. Paper, then ink. */}
+          <p
+            ref={rolesCopyRef}
+            className="absolute m-0 grid"
+            style={{
+              left: layout.roles.left,
+              top: layout.roles.top,
+              width: layout.roles.width,
+              justifyItems: layout.roles.justify,
+              fontFamily: 'var(--font-sans)',
+              fontSize: layout.roles.fontSize,
+              fontWeight: layout.roles.fontWeight,
+              lineHeight: 1,
+              letterSpacing: '.01em',
+            }}
+          >
+            <span className="whitespace-nowrap">
+              {role.split(' ').map((w, wi) => (
+                <React.Fragment key={wi}>
+                  {wi > 0 && ' '}
+                  <span className="relative inline-block overflow-hidden align-top" style={{ paddingBottom: '.14em' }}>
+                    <span
+                      className="relative inline-block"
+                      style={{ color: PAPER, animation: `nr-word-in .9s ${EASE} ${(ROLE_AT + wi * 0.062).toFixed(2)}s both` }}
+                    >
+                      {w}
+                      <span
+                        className="absolute inset-0"
+                        style={{ color: INK, opacity: 0, animation: inverted ? `nr-intro-fill ${invert}` : undefined }}
+                      >
+                        {w}
+                      </span>
+                    </span>
+                  </span>
+                </React.Fragment>
+              ))}
+            </span>
           </p>
         </>
       )}
@@ -267,23 +404,23 @@ export function HomeIntro({
           bottom: 'clamp(32px, 8vh, 72px)',
           gap: 'clamp(12px, 1.6vh, 18px)',
           translate: '-50% 0',
-          animation: opening ? `nr-intro-foot-out .45s ${EASE} both` : `nr-intro-foot-in 1s ${EASE} .5s both`,
+          animation: inverted ? `nr-intro-foot-out .6s ${EASE} both` : `nr-intro-foot-in 1s ${EASE} .5s both`,
         }}
       >
         <div
           className="flex items-center gap-3 uppercase"
-          style={{ fontFamily: 'var(--font-sans)', fontSize: '10.5px', letterSpacing: '.22em', color: MUTED_LIGHT }}
+          style={{ fontFamily: 'var(--font-sans)', fontSize: '10.5px', letterSpacing: '.22em', color: PAPER_SOFT }}
         >
-          <span className="block h-px w-[26px]" style={{ background: RULE_LIGHT }} />
+          <span className="block h-px w-[26px]" style={{ background: PAPER_FAINT }} />
           <span>Getting ready</span>
-          <span className="block h-px w-[26px]" style={{ background: RULE_LIGHT }} />
-          <span style={{ color: INK, letterSpacing: '.1em', fontVariantNumeric: 'tabular-nums', minWidth: '4ch' }}>
+          <span className="block h-px w-[26px]" style={{ background: PAPER_FAINT }} />
+          <span style={{ color: PAPER, letterSpacing: '.1em', fontVariantNumeric: 'tabular-nums', minWidth: '4ch' }}>
             {String(count).padStart(3, '0')}%
           </span>
         </div>
         <p
           className="m-0 grid"
-          style={{ fontFamily: 'var(--font-sans)', fontWeight: 100, fontSize: 'clamp(20px, 2.2vw, 30px)', lineHeight: 1, color: INK }}
+          style={{ fontFamily: 'var(--font-sans)', fontWeight: 100, fontSize: 'clamp(20px, 2.2vw, 30px)', lineHeight: 1, color: PAPER }}
         >
           {PHRASES.map((p, pi) => {
             const state = pi === phrase ? 'in' : pi < phrase ? 'out' : 'idle'

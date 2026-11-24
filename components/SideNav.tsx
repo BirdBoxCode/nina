@@ -226,6 +226,8 @@ export function SideNav() {
 
   const [icons3dReady, setIcons3dReady] = useState(false)
   const onIcons3dReady = useCallback(() => setIcons3dReady(true), [])
+  // Flat icons return while a dropped 3D context rebuilds.
+  const [icons3dLost, setIcons3dLost] = useState(false)
 
   const linkStyle = (active: boolean, i: number): React.CSSProperties => ({
     fontFamily: 'var(--font-display)',
@@ -274,13 +276,13 @@ export function SideNav() {
               style={{
                 width: navIconWidth(scrolled),
                 transform: `scale(${(1 + near * ICON_GROW).toFixed(3)})`,
-                opacity: icons3dReady ? 0 : 1,
+                opacity: icons3dReady && !icons3dLost ? 0 : 1,
                 transition: `width ${NAV_TRANSITION}, transform ${NAV_TRANSITION}, opacity .6s ease`,
               }}
             />
             {/* 3D icons over the flat ones; scaled (never resized) to track the compact bar. */}
             <span className="block" style={navIconOverlay(scrolled, 1 + near * ICON_GROW)}>
-              <MenuIcons3D visible={icons3dReady} shadow={ICON_SHADOW} onReady={onIcons3dReady} />
+              <MenuIcons3D visible={icons3dReady} shadow={ICON_SHADOW} onReady={onIcons3dReady} onLost={setIcons3dLost} />
             </span>
           </span>
         </button>

@@ -573,19 +573,22 @@ const BUILD_LATE = 2500
 function HeroName({
   startAt,
   go,
+  instant,
   rootRef,
   style,
 }: {
   startAt: number
   /** False while the home intro is up; the settle timer starts with the entrance. */
   go: boolean
+  /** The intro already drew the name here, so the letters start at rest. */
+  instant: boolean
   rootRef: React.RefObject<HTMLHeadingElement | null>
   style: React.CSSProperties
 }) {
   const glyphRefs = useRef<(HTMLSpanElement | null)[]>([])
   const [live, setLive] = useState(false)
   const count = NAME_COUNT
-  const settleAt = startAt + count * NAME_STAGGER + NAME_LETTER_DUR
+  const settleAt = instant ? 0 : startAt + count * NAME_STAGGER + NAME_LETTER_DUR
 
   useEffect(() => {
     if (!go) return
@@ -689,7 +692,9 @@ function HeroName({
                         '--rise': `${rise.toFixed(3)}em`,
                         '--tilt': `${tilt.toFixed(2)}deg`,
                         animation:
-                          `nr-letter-in ${NAME_LETTER_DUR}s cubic-bezier(.22,1,.36,1) ${(startAt + i * NAME_STAGGER).toFixed(2)}s both, ` +
+                          (instant
+                            ? ''
+                            : `nr-letter-in ${NAME_LETTER_DUR}s cubic-bezier(.22,1,.36,1) ${(startAt + i * NAME_STAGGER).toFixed(2)}s both, `) +
                           `nr-letter-idle 3.6s ease-in-out ${(settleAt + i * 0.12).toFixed(2)}s infinite alternate`,
                       } as React.CSSProperties
                     }
@@ -722,12 +727,17 @@ function HeroName({
 function HeroRoles({
   startAt,
   go,
+  instant,
+  rootRef,
   align,
   style,
 }: {
   startAt: number
   /** False while the home intro is up; the rotation starts with the entrance. */
   go: boolean
+  /** The intro already rolled the first phrase in here, so it starts in place. */
+  instant: boolean
+  rootRef: React.RefObject<HTMLParagraphElement | null>
   align: 'end' | 'center'
   style: React.CSSProperties
 }) {
@@ -750,6 +760,7 @@ function HeroRoles({
 
   const wordStyle = (state: 'in' | 'out' | 'idle', wi: number): React.CSSProperties => {
     if (state === 'in') {
+      if (roles.first && instant) return {}
       const delay = (roles.first ? startAt : 0) + wi * ROLE_WORD_STAGGER
       return { animation: `nr-word-in .9s cubic-bezier(.22,1,.36,1) ${delay.toFixed(2)}s both` }
     }
@@ -764,6 +775,7 @@ function HeroRoles({
 
   return (
     <p
+      ref={rootRef}
       className="relative m-0 grid pointer-events-none"
       // top: the word boxes' descender padding sits below the text; shift by half of it so
       // the phrase centres on the same line as the name.
@@ -848,6 +860,11 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   const onIcons3dReady = useCallback(() => setIcons3dReady(true), [])
   const [crest3dReady, setCrest3dReady] = useState(false)
   const onCrest3dReady = useCallback(() => setCrest3dReady(true), [])
+  // A 3D piece whose context was dropped shows its flat art until it has rebuilt. Kept
+  // apart from the ready flags so the build chain (and what it has mounted) is untouched.
+  const [crest3dLost, setCrest3dLost] = useState(false)
+  const [logo3dLost, setLogo3dLost] = useState(false)
+  const [icons3dLost, setIcons3dLost] = useState(false)
   const heroRef = useRef<HTMLElement | null>(null)
   // Crest aim: unit vector from the crest's centre to the hovered label's centre.
   const crestRef = useRef<HTMLDivElement | null>(null)
@@ -869,6 +886,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   const [heroGo, setHeroGo] = useState(!playIntro)
   const openHero = useCallback(() => setHeroGo(true), [])
   const nameRef = useRef<HTMLHeadingElement | null>(null)
+  const rolesRef = useRef<HTMLParagraphElement | null>(null)
   const [fontsReady, setFontsReady] = useState(false)
   // The 3D pieces build one after another (crest, wordmark, menu icons), so no single
   // main-thread stall is long; each waits for the one before, or moves on if it is late.
@@ -1148,10 +1166,13 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
     const logo = logoRef.current
     const crest = crestRef.current
     const name = nameRef.current
-    if (!logo || !crest || !name) return null
+    const roles = rolesRef.current
+    if (!logo || !crest || !name || !roles) return null
     const lb = logo.getBoundingClientRect()
     const nb = name.getBoundingClientRect()
     const ns = getComputedStyle(name)
+    const rb = roles.getBoundingClientRect()
+    const rs = getComputedStyle(roles)
     return {
       crest: { cx: lb.left + lb.width / 2, cy: lb.top + crest.offsetHeight / 2, w: crest.offsetWidth, h: crest.offsetHeight },
       name: {
@@ -1160,6 +1181,14 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
         width: nb.width,
         fontSize: parseFloat(ns.fontSize),
         align: ns.textAlign === 'center' ? 'center' : 'left',
+      },
+      roles: {
+        left: rb.left,
+        top: rb.top,
+        width: rb.width,
+        fontSize: parseFloat(rs.fontSize),
+        fontWeight: parseFloat(rs.fontWeight),
+        justify: rs.justifyItems,
       },
     }
   }, [])
@@ -1298,6 +1327,8 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
           progress={introProgress}
           measure={measureIntro}
           words={NAME_WORDS}
+          role={ROLES[0]}
+          rolesEl={rolesRef}
           crestSrc={ART.ornament}
           onOpen={openHero}
         />
@@ -1343,13 +1374,13 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                 style={{
                   width: navIconWidth(scrolled),
                   transform: `scale(${(1 + iconNear * ICON_GROW).toFixed(3)})`,
-                  opacity: icons3dReady ? 0 : 1,
+                  opacity: icons3dReady && !icons3dLost ? 0 : 1,
                   transition: `width ${NAV_TRANSITION}, transform .5s ${EASE}, opacity .6s ease`,
                 }}
               />
               {/* 3D icons over the flat ones; scaled (never resized) to track the compact bar. */}
               <span className="block" style={navIconOverlay(scrolled, 1 + iconNear * ICON_GROW)}>
-                {iconsGo && <MenuIcons3D visible={icons3dReady} shadow={SHADOW.icons} onReady={onIcons3dReady} />}
+                {iconsGo && <MenuIcons3D visible={icons3dReady} shadow={SHADOW.icons} onReady={onIcons3dReady} onLost={setIcons3dLost} />}
               </span>
             </span>
           </button>
@@ -1460,7 +1491,13 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                   wordmark, and is width-matched to it (same clamp as the wordmark). */}
               {/* Entrance lives on its own wrapper: the crest's aim is an inline transform,
                   which a `both`-filled animation on the same element would pin. */}
-              <div style={{ animation: `nr-crest-in 1.2s ${EASE} ${at(LOAD.crest)} both` }}>
+              <div
+                style={{
+                  animation: playIntro
+                    ? `nr-crest-settle 2.2s cubic-bezier(.33,1,.68,1) ${at(0)} both`
+                    : `nr-crest-in 1.2s ${EASE} ${at(LOAD.crest)} both`,
+                }}
+              >
               <div
                 ref={crestRef}
                 data-transition-crest
@@ -1489,12 +1526,12 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                   height={1328}
                   priority
                   className="block h-auto w-full"
-                  style={{ opacity: CREST_3D && crest3dReady ? 0 : 1, transition: 'opacity .6s ease' }}
+                  style={{ opacity: CREST_3D && crest3dReady && !crest3dLost ? 0 : 1, transition: 'opacity .6s ease' }}
                 />
                 {/* 3D crest over the flat one, inside the aim plane and under the crest's
                     shadow; the PNG keeps the layout box and stays as the fallback. */}
                 {CREST_3D && !reducedMotion && (
-                  <Crest3D glide={glide} visible={crest3dReady} onReady={onCrest3dReady} />
+                  <Crest3D glide={glide} visible={crest3dReady} onReady={onCrest3dReady} onLost={setCrest3dLost} />
                 )}
                 {/* Light on the side facing the label. Masked by the crest itself, like
                     the wordmark sheen, so it falls on the artwork, not a box around it. */}
@@ -1585,12 +1622,18 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                   height={463}
                   priority
                   className="block h-auto"
-                  style={{ width: LOGO_W, opacity: logo3dReady ? 0 : 1, transition: 'opacity .6s ease' }}
+                  style={{ width: LOGO_W, opacity: logo3dReady && !logo3dLost ? 0 : 1, transition: 'opacity .6s ease' }}
                 />
                 {/* Real-3D wordmark over the flat one; the PNG stays as the fallback (no
                     WebGL, reduced motion) and keeps the layout box either way. */}
                 {!reducedMotion && logoGo && (
-                  <NinaroLogo3D glide={glide} visible={logo3dReady} shadow={SHADOW.logo} onReady={onLogo3dReady} />
+                  <NinaroLogo3D
+                    glide={glide}
+                    visible={logo3dReady}
+                    shadow={SHADOW.logo}
+                    onReady={onLogo3dReady}
+                    onLost={setLogo3dLost}
+                  />
                 )}
               </div>
             </div>
@@ -1620,6 +1663,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
               <HeroName
                 startAt={loadDelay + LOAD.name}
                 go={heroGo}
+                instant={playIntro}
                 rootRef={nameRef}
                 style={{
                   fontSize: narrow ? 'clamp(26px, 7.5vw, 40px)' : `calc(${LOGO_W} * 0.2)`,
@@ -1648,6 +1692,8 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
               <HeroRoles
                 startAt={loadDelay + LOAD.roles}
                 go={heroGo}
+                instant={playIntro}
+                rootRef={rolesRef}
                 align={narrow ? 'center' : 'end'}
                 style={{
                   fontSize: narrow ? 'clamp(18px, 5.2vw, 26px)' : `calc(${LOGO_W} * 0.21)`,
