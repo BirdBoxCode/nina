@@ -126,6 +126,16 @@ const LOAD = {
 }
 /* Wings ink in along their lines: seconds per strand, and between strands. */
 const WING_DRAW = { duration: 2.4, stagger: 0.16, width: 60 }
+/* At rest the wings breathe from their root beside the crest (one slow cycle), and lean
+   their tips toward the cursor's height by up to WING_LEAN degrees. */
+const WING_BREATHE = 14
+const WING_LEAN = 1.6
+const wingMotion = (side: 'l' | 'r', start: string): React.CSSProperties => ({
+  transformOrigin: side === 'l' ? '100% 50%' : '0% 50%',
+  rotate: `calc(var(--nr-dy, 0) * ${side === 'l' ? -WING_LEAN : WING_LEAN}deg)`,
+  transition: 'rotate 1.1s cubic-bezier(.2,.7,.2,1)',
+  animation: `nr-wing-breathe-${side} ${WING_BREATHE}s ease-in-out ${start} infinite`,
+})
 
 /* Scroll parallax speeds, relative to the page (1 = moves with it, 0 = holds still). */
 const PARALLAX = {
@@ -1468,14 +1478,16 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             <div
               aria-hidden="true"
               style={{
-                opacity: wingHot.left || wingHot.right ? 0.9 : menuOpen ? 0.2 : near ? 0.3 : 0.7,
+                opacity: wingHot.left || wingHot.right ? 1 : menuOpen ? 0.2 : near ? 0.3 : 0.9,
                 translate: depth(DEPTH.wings),
                 transition: `opacity .5s ease, ${DEPTH_EASE}`,
               }}
             >
               {/* Each wing can be thrown around the hero and glides home 2s after release. The drag lives on
                   a wrapper so it never meets the unfurl animation on the image. */}
-              <div style={{ ...WING, right: WING_GAP, filter: SHADOW.wings, transition: SHADOW_EASE }}>
+              <div style={{ ...WING, right: WING_GAP }}>
+                <div data-lean style={wingMotion('l', at(LOAD.wings + 2.6))}>
+                <div style={{ filter: SHADOW.wings, transition: SHADOW_EASE }}>
                 <DragArt
                   src={SVG.wingLeft.src}
                   bounds={heroRef}
@@ -1489,8 +1501,12 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                     <InkArt src={SVG.wingLeft.src} ratio={SVG.wingLeft.ratio} draw={{ ...WING_DRAW, delay: at(LOAD.wings) }} />
                   </div>
                 </DragArt>
+                </div>
+                </div>
               </div>
-              <div style={{ ...WING, left: WING_GAP, filter: SHADOW.wings, transition: SHADOW_EASE }}>
+              <div style={{ ...WING, left: WING_GAP }}>
+                <div data-lean style={wingMotion('r', at(LOAD.wings + 2.6))}>
+                <div style={{ filter: SHADOW.wings, transition: SHADOW_EASE }}>
                 <DragArt
                   src={SVG.wingRight.src}
                   bounds={heroRef}
@@ -1508,6 +1524,8 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                     />
                   </div>
                 </DragArt>
+                </div>
+                </div>
               </div>
             </div>
             </div>
