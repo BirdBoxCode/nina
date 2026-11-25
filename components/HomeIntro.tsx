@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import { PALETTE } from '@/lib/palette'
 
 /*
  * Home intro. Covers the hero on a full page load (first visit or refresh, never on an
@@ -18,12 +19,15 @@ import Image from 'next/image'
 
 /* Shared with NinaroHome's tokens; kept here to avoid a circular import. */
 const PAPER = '#EFEBE2'
-const INK = '#76736B'
+/* The hero's name is set in the deep ink and its roles in the soft ink; the intro's copies
+   land in the same colours so the hand-off is seamless. */
+const INK = PALETTE.ink
+const INK_SOFT = PALETTE.inkSoft
 /* While loading the intro is dark: an ink ground with paper-coloured type. */
 const PAPER_SOFT = 'rgba(239,235,226,.62)'
 const PAPER_FAINT = 'rgba(239,235,226,.22)'
 /* Intro ground: the ink's hue, deepened so the paper-coloured type reads clearly. */
-const INTRO_GROUND = '#58554E'
+const INTRO_GROUND = PALETTE.ink
 const EASE = 'cubic-bezier(.22,1,.36,1)'
 const OPEN_EASE = 'cubic-bezier(.76,0,.24,1)'
 
@@ -294,7 +298,7 @@ export function HomeIntro({
                   mixBlendMode: 'multiply',
                   filter:
                     'grayscale(1) contrast(.8) brightness(1.2) ' +
-                    'drop-shadow(0 1px 0 rgba(255,255,255,.8)) drop-shadow(0 -1px 0 rgba(60,56,50,.25))',
+                    'drop-shadow(0 1px 0 rgba(255,255,255,.8)) drop-shadow(0 -1px 0 rgba(77,69,96,.25))',
                 }}
               />
             </div>
@@ -384,7 +388,7 @@ export function HomeIntro({
                       {w}
                       <span
                         className="absolute inset-0"
-                        style={{ color: INK, opacity: 0, animation: inverted ? `nr-intro-fill ${invert}` : undefined }}
+                        style={{ color: INK_SOFT, opacity: 0, animation: inverted ? `nr-intro-fill ${invert}` : undefined }}
                       >
                         {w}
                       </span>

@@ -4,7 +4,8 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 
-const PANEL = '#BBBB89'
+// The icons' grey-sage (green-icon petals).
+const PANEL = '#969788'
 /* The crest rides the panel as a paper-coloured cut-out. */
 const CUTOUT = '#EFEBE2'
 const CREST = '/images/assets/opera-senza.png'

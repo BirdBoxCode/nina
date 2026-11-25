@@ -123,6 +123,38 @@
   to   { transform: translateY(-115%); }
 }
 
+/* Line art inking in (components/InkArt.tsx). A wide stroke along each outline runs its
+   dash out inside a mask, so the fill appears along the lines. Dash 1, gap 2 on a unit
+   path length, so at the start no part of a dash (or its round cap) is on the path. */
+.nr-ink-mask {
+  stroke-dasharray: 1 2;
+  stroke-dashoffset: 0;
+}
+@keyframes nr-ink-draw {
+  from { stroke-dashoffset: 1.05; }
+  to   { stroke-dashoffset: 0; }
+}
+/* Hero wings at rest: a slow flex from the root beside the crest, like breathing.
+   Mirrored per side; transform-origin is set on the element. */
+@keyframes nr-wing-breathe-l {
+  0%, 100% { transform: rotate(0deg) scaleY(1); }
+  50%      { transform: rotate(-.7deg) scaleY(1.014); }
+}
+@keyframes nr-wing-breathe-r {
+  0%, 100% { transform: rotate(0deg) scaleY(1); }
+  50%      { transform: rotate(.7deg) scaleY(1.014); }
+}
+/* Far-plane drawings settle in like ink spreading into the paper. */
+@keyframes nr-ink-bloom {
+  from { opacity: 0; transform: scale(.975); }
+  to   { opacity: 1; transform: none; }
+}
+/* Flower icons (components/FlowerIcon.tsx): a barely-there breath about the centre. */
+@keyframes nr-flower-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.015); }
+}
+
 /* Home intro (components/HomeIntro.tsx). Opacity and transform only. */
 @keyframes nr-intro-fade {
   to { opacity: 0; }
@@ -165,12 +197,12 @@
 }
 
 .nr-home ::selection {
-  background: rgba(118, 115, 107, 0.22);
-  color: #76736B;
+  background: rgba(170, 170, 199, 0.4);
+  color: #4D4560;
 }
 
 .nr-home *:focus-visible {
-  outline: 2px solid #76736B;
+  outline: 2px solid #8E97C0;
   outline-offset: 3px;
 }
 
@@ -185,6 +217,12 @@
   }
   .nr-home .nr-line {
     stroke-dashoffset: 0 !important;
+  }
+  .nr-home .nr-ink-mask {
+    stroke-dashoffset: 0 !important;
+  }
+  .nr-home [data-lean] {
+    rotate: none !important;
   }
   .nr-home [data-reveal-index] {
     transform: none !important;

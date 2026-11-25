@@ -6,15 +6,15 @@ import dynamic from 'next/dynamic'
 import type { SelectedWork } from '@/lib/sanity/queries'
 import { animate, motion, useDragControls, useMotionValue } from 'framer-motion'
 import { TransitionLink, useTransitionCovered, REVEAL_CLEAR_DELAY } from '@/components/PageTransition'
-import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconOverlay, navIconWidth, useScrolled } from '@/components/SideNav'
+import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconWidth, useScrolled } from '@/components/SideNav'
 import { liftShadow } from '@/lib/utils'
+import { PALETTE, PLANES } from '@/lib/palette'
 import { HomeIntro, useIntroOnce, type IntroLayout } from '@/components/HomeIntro'
+import { InkArt } from '@/components/InkArt'
+import { FlowerIcon, FlowerStrip } from '@/components/FlowerIcon'
 
 /* Real-3D wordmark; WebGL, so client only. The flat PNG holds the layout until it is drawn. */
 const NinaroLogo3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.NinaroLogo3D), {
-  ssr: false,
-})
-const MenuIcons3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.MenuIcons3D), {
   ssr: false,
 })
 const Crest3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.Crest3D), {
@@ -32,7 +32,6 @@ const DEPTH = { bar: 4, ghost: -24, wings: -10, logo: 8 }
 /* Shadows on the paper, by height: the higher the layer, the longer and softer its shadow
    and the further it slides from the cursor, so the layers visibly part. */
 const SHADOW = {
-  icons: liftShadow(1, 2.5, 2.5, 4, 0.4),
   wings: liftShadow(2, 4, 4, 6, 0.22),
   crest: liftShadow(3, 8, 10, 12, 0.3),
   logo: liftShadow(2, 5, 5, 14, 0.42),
@@ -44,39 +43,42 @@ const PLAY_LINGER = 300
 /* Menu labels sit at mixed depths (10–22px) so they part from one another in space. */
 const labelDepth = (i: number) => 10 + ((i * 5) % 13)
 
-/* --- Design tokens (Nocturne, run on a light paper ground) --- */
-const PAPER = '#EFEBE2'
-const FRAME = '#E6E1D7'
-const INK = '#76736B'
-const MUTED = '#76736B'
-const MUTED_LIGHT = '#8F8B82'
-const DIMMED = '#B5B1A8'
-const RULE = '#BDB9B0'
-const RULE_LIGHT = '#D6D2C9'
-const BORDER = '#dcd8ce'
-const ACCENT = '#4E4B45'
+/* --- Design tokens (organic: ink on paper, see lib/palette.ts) --- */
+const PAPER = PALETTE.paper
+const FRAME = PALETTE.paperDeep
+const INK = PALETTE.ink
+const MUTED = PALETTE.inkSoft
+const MUTED_LIGHT = PALETTE.inkMuted
+const DIMMED = PALETTE.inkFaint
+const RULE = PALETTE.rule
+const RULE_LIGHT = PALETTE.rule
+const BORDER = PALETTE.rule
+const ACCENT = PALETTE.ink
 
 /* --- Assets. Paths confirmed against /public by checksum against the handoff set. --- */
 const ART = {
   ninaro: '/images/assets/ninaro.png',
   ornament: '/images/assets/opera-senza.png',
   icon1: '/images/assets/icons/icon 1.png',
-  icon2: '/images/assets/icons/icon 2.png',
   icon3: '/images/assets/icons/icon 3.png',
-  menuIcons: '/images/assets/icons/purple-icons.png',
-  playIcons: '/images/assets/icons/green-icons.png',
-  bull: '/images/assets/components/bull.png',
-  dragon: '/images/assets/components/dragon.png',
-  shell: '/images/assets/components/shell.png',
-  sword: '/images/assets/components/sword.png',
-  marking: '/images/assets/components/marking.png',
-  marking2: '/images/assets/components/marking-2.png',
-  wingLeft: '/images/assets/components/wings-left.png',
-  wingRight: '/images/assets/components/wings-right.png',
 }
 
-/* Crest/wordmark width; the wings are sized off it so they keep the design's proportion. */
-const LOGO_W = 'clamp(140px, 19vw, 300px)'
+/* Vector line art (Paper, "SVG Frame"), coloured by CSS. Preferred over the PNGs above. */
+const SVG = {
+  wingLeft: { src: '/images/assets/svg/wings-left.svg', ratio: 2400 / 844 },
+  wingRight: { src: '/images/assets/svg/wings-right.svg', ratio: 2400 / 842 },
+  dragon: { src: '/images/assets/svg/dragon.svg', ratio: 2400 / 1395 },
+  sword: { src: '/images/assets/svg/sword.svg', ratio: 804 / 1953.036 },
+  bull: { src: '/images/assets/svg/bull.svg', ratio: 1515.629 / 994 },
+  shell: { src: '/images/assets/svg/shell.svg', ratio: 1514.639 / 970 },
+  marking: { src: '/images/assets/svg/marking.svg', ratio: 757.631 / 2420 },
+  marking2: { src: '/images/assets/svg/marking-2.svg', ratio: 1514.735 / 1285 },
+}
+
+/* Crest/wordmark width; the wings are sized off it so they keep the design's proportion.
+   Grows on large screens so the hero holds the page; height-capped so short laptops keep
+   the whole cluster in view. Unchanged at 1440 wide. */
+const LOGO_W = 'clamp(140px, min(19vw, 44vh), 340px)'
 
 /* Play group, beside the wordmark and scaled with it so it never runs off a narrow screen.
    The green strip (78×247) is turned to a row: its height is the strip's width. */
@@ -110,11 +112,22 @@ const LOAD = {
   wings: 1.3,
   wingStagger: 0.1,
   cue: 2.2,
-  done: 2.7,
+  done: 3.6,
   name: 1.0,
   roles: 1.5,
 }
-const UNFURL_EASE = 'cubic-bezier(.22,.8,.25,1)'
+/* Wings ink in along their lines: seconds per strand, and between strands. */
+const WING_DRAW = { duration: 2.4, stagger: 0.16, width: 60 }
+/* At rest the wings breathe from their root beside the crest (one slow cycle), and lean
+   their tips toward the cursor's height by up to WING_LEAN degrees. */
+const WING_BREATHE = 14
+const WING_LEAN = 1.6
+const wingMotion = (side: 'l' | 'r', start: string): React.CSSProperties => ({
+  transformOrigin: side === 'l' ? '100% 50%' : '0% 50%',
+  rotate: `calc(var(--nr-dy, 0) * ${side === 'l' ? -WING_LEAN : WING_LEAN}deg)`,
+  transition: 'rotate 1.1s cubic-bezier(.2,.7,.2,1)',
+  animation: `nr-wing-breathe-${side} ${WING_BREATHE}s ease-in-out ${start} infinite`,
+})
 
 /* Scroll parallax speeds, relative to the page (1 = moves with it, 0 = holds still). */
 const PARALLAX = {
@@ -156,12 +169,6 @@ const CREST_MASK: React.CSSProperties = {
   WebkitMaskPosition: 'center',
   maskPosition: 'center',
   mixBlendMode: 'screen',
-}
-
-/* Ghost line PNGs are white line art on transparent; invert + multiply reads them dark on paper. */
-const GHOST_FILTER: React.CSSProperties = {
-  filter: 'invert(1)',
-  mixBlendMode: 'multiply',
 }
 
 /* Thrown background art may hang this share of itself past the section's edges. */
@@ -426,18 +433,15 @@ function DragArt({
   )
 }
 
-/* marking-2 ships as black line art, unlike the rest of the set; it only needs the multiply. */
-const DARK_GHOSTS = new Set<string>([ART.marking2])
-
 const CATS = [
-  { label: 'Murals', href: '/walls', left: '25%', top: '21%', rot: 0, ghost: ART.bull },
-  { label: 'Paintings', href: '/paintings', left: '20%', top: '36%', rot: 0, ghost: ART.marking },
-  { label: 'Illustrations', href: '/illustration', left: '17%', top: '53%', rot: 0, ghost: ART.dragon },
-  { label: 'Installations', href: '/installations', left: '18%', top: '68%', rot: 0, ghost: ART.shell },
-  { label: 'Stage Design', href: '/stage-design', left: '75%', top: '21%', rot: 0, ghost: ART.marking2 },
-  { label: 'Workshops', href: '/workshops', left: '80%', top: '36%', rot: 0, ghost: ART.sword },
-  { label: 'About', href: '/bio-contact', left: '83%', top: '53%', rot: 0, ghost: ART.marking },
-  { label: 'Shop', href: '/shop', left: '82%', top: '68%', rot: 0, ghost: ART.shell },
+  { label: 'Murals', href: '/walls', left: '25%', top: '21%', rot: 0, ghost: SVG.bull.src },
+  { label: 'Paintings', href: '/paintings', left: '20%', top: '36%', rot: 0, ghost: SVG.marking.src },
+  { label: 'Illustrations', href: '/illustration', left: '17%', top: '53%', rot: 0, ghost: SVG.dragon.src },
+  { label: 'Installations', href: '/installations', left: '18%', top: '68%', rot: 0, ghost: SVG.shell.src },
+  { label: 'Stage Design', href: '/stage-design', left: '75%', top: '21%', rot: 0, ghost: SVG.marking2.src },
+  { label: 'Workshops', href: '/workshops', left: '80%', top: '36%', rot: 0, ghost: SVG.sword.src },
+  { label: 'About', href: '/bio-contact', left: '83%', top: '53%', rot: 0, ghost: SVG.marking.src },
+  { label: 'Shop', href: '/shop', left: '82%', top: '68%', rot: 0, ghost: SVG.shell.src },
 ] as const
 
 /**
@@ -779,7 +783,7 @@ function HeroRoles({
       className="relative m-0 grid pointer-events-none"
       // top: the word boxes' descender padding sits below the text; shift by half of it so
       // the phrase centres on the same line as the name.
-      style={{ fontFamily: 'var(--font-sans)', lineHeight: 1, letterSpacing: '.01em', color: INK, justifyItems: align, top: '.07em', ...style }}
+      style={{ fontFamily: 'var(--font-sans)', lineHeight: 1, letterSpacing: '.01em', color: MUTED, justifyItems: align, top: '.07em', ...style }}
     >
       <span className="sr-only">{ROLES.join(', ')}</span>
       {ROLES.map((role, ri) => {
@@ -821,9 +825,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   const [hover, setHover] = useState<number | null>(null)
   // Which illustration is painted, held apart from whether it is visible: on mouse-out
   // `hover` clears immediately, so reading the src off it would swap the image mid-fade.
-  const [ghostSrc, setGhostSrc] = useState<string>(ART.marking)
-  // Derived, not stored: ghostSrc outlives `hover` through the fade, and so must the polarity.
-  const ghostDark = DARK_GHOSTS.has(ghostSrc)
+  const [ghostSrc, setGhostSrc] = useState<string>(SVG.marking.src)
   const [near, setNear] = useState(false)
   const [narrow, setNarrow] = useState(false)
   const [nudge, setNudge] = useState<readonly number[]>(() => CATS.map(() => 0))
@@ -842,6 +844,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   // Parallax layers, moved directly from a scroll frame (no re-render per frame).
   const logoParRef = useRef<HTMLDivElement | null>(null)
   const wingsParRef = useRef<HTMLDivElement | null>(null)
+  const echoParRef = useRef<HTMLDivElement | null>(null)
   const workRef = useRef<HTMLElement | null>(null)
   const dragonRef = useRef<HTMLDivElement | null>(null)
   const swordRef = useRef<HTMLDivElement | null>(null)
@@ -851,20 +854,19 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   const [canDrag, setCanDrag] = useState(false)
   // Hero wings brighten while one is under the cursor or held.
   const [wingHot, setWingHot] = useState({ left: false, right: false })
+  // The Tattoo flower blooms while its link is hovered or focused.
+  const [tattooHot, setTattooHot] = useState(false)
   const onLeftWingHot = useCallback((hot: boolean) => setWingHot((w) => (w.left === hot ? w : { ...w, left: hot })), [])
   const onRightWingHot = useCallback((hot: boolean) => setWingHot((w) => (w.right === hot ? w : { ...w, right: hot })), [])
   // The 3D wordmark replaces the flat one once it has drawn its first frame.
   const [logo3dReady, setLogo3dReady] = useState(false)
   const onLogo3dReady = useCallback(() => setLogo3dReady(true), [])
-  const [icons3dReady, setIcons3dReady] = useState(false)
-  const onIcons3dReady = useCallback(() => setIcons3dReady(true), [])
   const [crest3dReady, setCrest3dReady] = useState(false)
   const onCrest3dReady = useCallback(() => setCrest3dReady(true), [])
   // A 3D piece whose context was dropped shows its flat art until it has rebuilt. Kept
   // apart from the ready flags so the build chain (and what it has mounted) is untouched.
   const [crest3dLost, setCrest3dLost] = useState(false)
   const [logo3dLost, setLogo3dLost] = useState(false)
-  const [icons3dLost, setIcons3dLost] = useState(false)
   const heroRef = useRef<HTMLElement | null>(null)
   // Crest aim: unit vector from the crest's centre to the hovered label's centre.
   const crestRef = useRef<HTMLDivElement | null>(null)
@@ -888,17 +890,14 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   const nameRef = useRef<HTMLHeadingElement | null>(null)
   const rolesRef = useRef<HTMLParagraphElement | null>(null)
   const [fontsReady, setFontsReady] = useState(false)
-  // The 3D pieces build one after another (crest, wordmark, menu icons), so no single
+  // The 3D pieces build one after another (crest, then wordmark), so no single
   // main-thread stall is long; each waits for the one before, or moves on if it is late.
   const [crestLate, setCrestLate] = useState(false)
   const [logoLate, setLogoLate] = useState(false)
-  const [iconsLate, setIconsLate] = useState(false)
   const crestSettled = !CREST_3D || reducedMotion || crest3dReady || crestLate
   const logoGo = crestSettled
   const logoSettled = reducedMotion || logo3dReady || logoLate
-  const iconsGo = logoSettled
-  const iconsSettled = icons3dReady || iconsLate
-  const introProgress = [fontsReady, crestSettled, logoSettled, iconsSettled].filter(Boolean).length / 4
+  const introProgress = [fontsReady, crestSettled, logoSettled].filter(Boolean).length / 3
   // Play opens on the wordmark only (Play sits inside it); leaving closes it after
   // PLAY_LINGER, cancelled if the cursor comes back in time.
   const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -1107,6 +1106,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
       const hy = Math.min(window.scrollY, vh * 1.2)
       set(logoParRef.current, -hy * (PARALLAX.logo - 1) * soft)
       set(wingsParRef.current, hy * (1 - PARALLAX.wings) * soft)
+      set(echoParRef.current, hy * (1 - PLANES.far.scroll) * soft)
 
       // Selected work. A layer at speed s lags the page by (1 - s) of the distance
       // scrolled past its anchor: both are anchored to the section entering at the
@@ -1153,11 +1153,6 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
     const id = setTimeout(() => setLogoLate(true), BUILD_LATE)
     return () => clearTimeout(id)
   }, [logoGo])
-  useEffect(() => {
-    if (!iconsGo) return
-    const id = setTimeout(() => setIconsLate(true), BUILD_LATE)
-    return () => clearTimeout(id)
-  }, [iconsGo])
 
   // Where the intro lays its crest imprint and name: over the hero's own, at rest. The
   // crest's entrance holds it lifted and scaled, so its box comes from layout sizes and
@@ -1365,23 +1360,15 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
           >
             {/* Icon column, sized off the logo width to keep the design's proportion */}
             <span ref={iconsRef} className="relative block" aria-hidden="true">
-              <Image
-                src={ART.menuIcons}
-                alt=""
-                width={77}
-                height={247}
-                className="block h-auto"
+              <FlowerStrip
+                variant="purple"
+                state={menuOpen ? 'open' : 'closed'}
                 style={{
                   width: navIconWidth(scrolled),
                   transform: `scale(${(1 + iconNear * ICON_GROW).toFixed(3)})`,
-                  opacity: icons3dReady && !icons3dLost ? 0 : 1,
-                  transition: `width ${NAV_TRANSITION}, transform .5s ${EASE}, opacity .6s ease`,
+                  transition: `width ${NAV_TRANSITION}, transform .5s ${EASE}`,
                 }}
               />
-              {/* 3D icons over the flat ones; scaled (never resized) to track the compact bar. */}
-              <span className="block" style={navIconOverlay(scrolled, 1 + iconNear * ICON_GROW)}>
-                {iconsGo && <MenuIcons3D visible={icons3dReady} shadow={SHADOW.icons} onReady={onIcons3dReady} onLost={setIcons3dLost} />}
-              </span>
             </span>
           </button>
 
@@ -1391,10 +1378,52 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             rel="noopener"
             className="pointer-events-auto relative flex items-center gap-3 p-1.5"
             style={{ animation: `nr-bar-in .9s ${EASE} ${at(LOAD.bar + 0.08)} both` }}
+            onPointerEnter={() => setTattooHot(true)}
+            onPointerLeave={() => setTattooHot(false)}
+            onFocus={() => setTattooHot(true)}
+            onBlur={() => setTattooHot(false)}
           >
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '18px', color: MUTED }}>Tattoo</span>
-            <Image src={ART.icon2} alt="" width={26} height={26} className="w-[26px] h-[26px]" aria-hidden="true" />
+            <span className="block w-[26px]" aria-hidden="true">
+              <FlowerIcon variant="purple" index={1} state={tattooHot ? 'hover' : 'closed'} />
+            </span>
           </a>
+        </div>
+
+        {/* Far plane: a large, faint echo of the wings behind everything. It trails the page
+            and runs against the cursor harder than the wings do, so the layers part. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+          <div ref={echoParRef} className="absolute inset-0" style={{ willChange: 'transform' }}>
+            <div
+              className="absolute left-1/2 top-1/2 flex items-center"
+              style={{
+                gap: `calc(${LOGO_W} * 0.9)`,
+                transform: 'translate(-50%, -30%)',
+                translate: depth(PLANES.far.cursor),
+                transition: DEPTH_EASE,
+                color: INK,
+              }}
+            >
+              {[SVG.wingLeft, SVG.wingRight].map((w, i) => (
+                <div
+                  key={w.src}
+                  className="shrink-0"
+                  style={{
+                    width: `calc(${LOGO_W} * 3.4)`,
+                    opacity: menuOpen ? PLANES.far.alpha * 0.5 : PLANES.far.alpha,
+                    transform: `translateY(${i ? 14 : 4}%) rotate(${i ? -7 : 7}deg)`,
+                    // Out of focus, as a far layer should be. Static, so it rasterises once.
+                    filter: 'blur(1.4px)',
+                    transition: 'opacity .8s ease',
+                  }}
+                >
+                  <div style={{ animation: `nr-ink-bloom 3.2s cubic-bezier(.33,1,.68,1) ${at(LOAD.wings + 0.9)} both` }}>
+                    <InkArt src={w.src} ratio={w.ratio} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Centre cluster — hovering the wordmark reveals the game entry beside it */}
@@ -1419,16 +1448,18 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             <div
               aria-hidden="true"
               style={{
-                opacity: wingHot.left || wingHot.right ? 0.9 : menuOpen ? 0.2 : near ? 0.3 : 0.7,
+                opacity: wingHot.left || wingHot.right ? 1 : menuOpen ? 0.2 : near ? 0.3 : 0.9,
                 translate: depth(DEPTH.wings),
                 transition: `opacity .5s ease, ${DEPTH_EASE}`,
               }}
             >
               {/* Each wing can be thrown around the hero and glides home 2s after release. The drag lives on
                   a wrapper so it never meets the unfurl animation on the image. */}
-              <div style={{ ...WING, right: WING_GAP, filter: SHADOW.wings, transition: SHADOW_EASE }}>
+              <div style={{ ...WING, right: WING_GAP }}>
+                <div data-lean style={wingMotion('l', at(LOAD.wings + 2.6))}>
+                <div style={{ filter: SHADOW.wings, transition: SHADOW_EASE }}>
                 <DragArt
-                  src={ART.wingLeft}
+                  src={SVG.wingLeft.src}
                   bounds={heroRef}
                   overhang={0}
                   returnAfter={WING_RETURN}
@@ -1436,21 +1467,18 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                   calm={reducedMotion}
                   onHot={onLeftWingHot}
                 >
-                  <Image
-                    src={ART.wingLeft}
-                    alt=""
-                    width={1009}
-                    height={355}
-                    priority
-                    draggable={false}
-                    className="block h-auto w-full"
-                    style={{ animation: `nr-unfurl-left 1.4s ${UNFURL_EASE} ${at(LOAD.wings)} both` }}
-                  />
+                  <div style={{ color: INK }}>
+                    <InkArt src={SVG.wingLeft.src} ratio={SVG.wingLeft.ratio} draw={{ ...WING_DRAW, delay: at(LOAD.wings) }} />
+                  </div>
                 </DragArt>
+                </div>
+                </div>
               </div>
-              <div style={{ ...WING, left: WING_GAP, filter: SHADOW.wings, transition: SHADOW_EASE }}>
+              <div style={{ ...WING, left: WING_GAP }}>
+                <div data-lean style={wingMotion('r', at(LOAD.wings + 2.6))}>
+                <div style={{ filter: SHADOW.wings, transition: SHADOW_EASE }}>
                 <DragArt
-                  src={ART.wingRight}
+                  src={SVG.wingRight.src}
                   bounds={heroRef}
                   overhang={0}
                   returnAfter={WING_RETURN}
@@ -1458,17 +1486,16 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                   calm={reducedMotion}
                   onHot={onRightWingHot}
                 >
-                  <Image
-                    src={ART.wingRight}
-                    alt=""
-                    width={1007}
-                    height={353}
-                    priority
-                    draggable={false}
-                    className="block h-auto w-full"
-                    style={{ animation: `nr-unfurl-right 1.4s ${UNFURL_EASE} ${at(LOAD.wings + LOAD.wingStagger)} both` }}
-                  />
+                  <div style={{ color: INK }}>
+                    <InkArt
+                      src={SVG.wingRight.src}
+                      ratio={SVG.wingRight.ratio}
+                      draw={{ ...WING_DRAW, delay: at(LOAD.wings + LOAD.wingStagger) }}
+                    />
+                  </div>
                 </DragArt>
+                </div>
+                </div>
               </div>
             </div>
             </div>
@@ -1593,12 +1620,10 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                   }}
                 >
                   <span className="relative block shrink-0" style={{ width: PLAY_ROW_W, height: PLAY_ROW_H }}>
-                    <Image
-                      src={ART.playIcons}
-                      alt=""
-                      width={78}
-                      height={247}
-                      className="absolute left-1/2 top-1/2 block h-auto max-w-none"
+                    <FlowerStrip
+                      variant="green"
+                      state={near ? 'playing' : 'closed'}
+                      className="absolute left-1/2 top-1/2 max-w-none"
                       style={{ width: PLAY_ROW_H, transform: 'translate(-50%, -50%) rotate(-90deg)' }}
                     />
                   </span>
@@ -1734,14 +1759,20 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                 ? `translateX(-50%) scale(${hover !== null ? 1 : 0.94})`
                 : `translate(-50%,-50%) scale(${hover !== null ? 1 : 0.94})`,
               transformOrigin: ghostBox ? 'center bottom' : 'center',
-              backgroundImage: `url(${ghostSrc})`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: ghostBox ? 'center bottom' : 'center',
-              backgroundSize: 'contain',
+              // The drawing is the mask and the ink fills it, so the ghost is the page's ink
+              // rather than the file's black.
+              background: INK,
+              WebkitMaskImage: `url(${ghostSrc})`,
+              maskImage: `url(${ghostSrc})`,
+              WebkitMaskRepeat: 'no-repeat',
+              maskRepeat: 'no-repeat',
+              WebkitMaskPosition: ghostBox ? 'center bottom' : 'center',
+              maskPosition: ghostBox ? 'center bottom' : 'center',
+              WebkitMaskSize: 'contain',
+              maskSize: 'contain',
               opacity: menuOpen && hover !== null ? 0.3 : 0,
               translate: depth(DEPTH.ghost),
               transition: `opacity .8s ease, transform 1.2s ${EASE}, ${DEPTH_EASE}`,
-              ...(ghostDark ? { mixBlendMode: 'multiply' as const } : GHOST_FILTER),
             }}
           />
 
@@ -1841,8 +1872,8 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
           >
             {/* Drag sits inside the parallax node: the scroll effect writes that node's
                 transform directly, so the two offsets add instead of overwriting. */}
-            <DragArt src={ART.dragon} bounds={artLayerRef} bounce="viewport" enabled={canDrag} calm={reducedMotion} opacity={0.14} hint>
-              <Image src={ART.dragon} alt="" width={1200} height={698} draggable={false} className="block h-auto w-full" style={GHOST_FILTER} />
+            <DragArt src={SVG.dragon.src} bounds={artLayerRef} bounce="viewport" enabled={canDrag} calm={reducedMotion} opacity={0.14} hint>
+              <InkArt src={SVG.dragon.src} ratio={SVG.dragon.ratio} style={{ color: INK }} />
             </DragArt>
           </div>
           <div
@@ -1851,7 +1882,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             style={{ right: '-4vw', height: narrow ? '60vh' : '90vh', willChange: 'transform' }}
           >
             <DragArt
-              src={ART.sword}
+              src={SVG.sword.src}
               bounds={artLayerRef}
               bounce="viewport"
               enabled={canDrag}
@@ -1860,7 +1891,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
               hint
               className="h-full"
             >
-              <Image src={ART.sword} alt="" width={494} height={1200} draggable={false} className="block h-full w-auto" style={GHOST_FILTER} />
+              <InkArt src={SVG.sword.src} ratio={SVG.sword.ratio} fit="height" style={{ color: INK }} />
             </DragArt>
           </div>
         </div>
@@ -1924,7 +1955,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                 </div>
                 <div className="flex items-baseline justify-between gap-4 pt-[13px]">
                   <span
-                    className="transition-colors duration-300 group-hover:text-[#4E4B45]"
+                    className="transition-colors duration-300 group-hover:text-[#4D4560]"
                     style={{
                       fontFamily: 'var(--font-sans)',
                       fontWeight: 500,
@@ -1963,17 +1994,17 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             style={{ width: 'clamp(78px, 8vw, 104px)' }}
           />
           <div className="flex gap-7">
-            <TransitionLink href="/bio-contact" className="hover:text-[#4E4B45]" style={MICRO}>
+            <TransitionLink href="/bio-contact" className="hover:text-[#4D4560]" style={MICRO}>
               About
             </TransitionLink>
-            <TransitionLink href="/shop" className="hover:text-[#4E4B45]" style={MICRO}>
+            <TransitionLink href="/shop" className="hover:text-[#4D4560]" style={MICRO}>
               Shop
             </TransitionLink>
             <a
               href="https://lineacruda.com"
               target="_blank"
               rel="noopener"
-              className="hover:text-[#4E4B45]"
+              className="hover:text-[#4D4560]"
               style={MICRO}
             >
               Tattoos ↗
