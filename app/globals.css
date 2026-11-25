@@ -145,6 +145,31 @@
   50%      { transform: rotate(.7deg) scaleY(1.014); }
 }
 /* Far-plane drawings settle in like ink spreading into the paper. */
+/* Night atmosphere (components/NightAtmosphere.tsx). Each layer runs on its own long
+   timing, so nothing ever visibly loops together. */
+/* Light shafts: a slow swell between dim and bright. */
+@keyframes nr-shaft {
+  0%, 100% { opacity: .35; }
+  50%      { opacity: 1; }
+}
+/* Haze bands: a slow sideways slide. Uses `translate`'s sibling, transform, so the
+   scroll parallax (standalone `translate`) composes with it. */
+@keyframes nr-haze {
+  from { transform: translateX(-5vw); }
+  to   { transform: translateX(5vw); }
+}
+/* Colour washes: a wide, slow wander. */
+@keyframes nr-wash {
+  0%   { transform: translate(-6%, -3%); }
+  50%  { transform: translate(5%, 2%); }
+  100% { transform: translate(-2%, 4%); }
+}
+/* Glint: a light band crosses the art in the first part of the cycle, then rests. */
+@keyframes nr-glint {
+  0%        { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  16%, 100% { -webkit-mask-position: 0% 0;   mask-position: 0% 0; }
+}
+
 @keyframes nr-ink-bloom {
   from { opacity: 0; transform: scale(.975); }
   to   { opacity: 1; transform: none; }
