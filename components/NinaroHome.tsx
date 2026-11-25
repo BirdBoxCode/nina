@@ -8,10 +8,11 @@ import { animate, motion, useDragControls, useMotionValue } from 'framer-motion'
 import { TransitionLink, useTransitionCovered, REVEAL_CLEAR_DELAY } from '@/components/PageTransition'
 import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconWidth, useScrolled } from '@/components/SideNav'
 import { liftShadow } from '@/lib/utils'
-import { PALETTE, PIGMENT, PLANES } from '@/lib/palette'
+import { INK_RGB, PALETTE, PIGMENT, PLANES } from '@/lib/palette'
 import { HomeIntro, useIntroOnce, type IntroLayout } from '@/components/HomeIntro'
 import { InkArt } from '@/components/InkArt'
 import { FlowerIcon, FlowerStrip } from '@/components/FlowerIcon'
+import { Glint, MoteField, NightAir, type MoteLayer } from '@/components/NightAtmosphere'
 
 /* Real-3D wordmark; WebGL, so client only. The flat PNG holds the layout until it is drawn. */
 const NinaroLogo3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.NinaroLogo3D), {
@@ -84,6 +85,31 @@ const GLASS_HAZE: React.CSSProperties = {
   WebkitMaskImage: 'radial-gradient(closest-side, #000 55%, transparent)',
   maskImage: 'radial-gradient(closest-side, #000 55%, transparent)',
 }
+/* NIGHT_FADE in px, for the canvas motes. */
+const nightFadePx = () => Math.min(420, Math.max(220, window.innerHeight * 0.38))
+
+/* Glowing motes in three depth planes on the night, plus faint plum dust in the hero.
+   Further back: smaller, dimmer, slower on scroll. The near plane is large, soft and out
+   of focus, and passes over the cards faster than the page. Colours: lavenderMist and
+   sageMist; the dust is the ink. */
+const MOTE_COLORS = ['197, 200, 245', '197, 200, 245', '203, 204, 188']
+const MOTES_FAR: MoteLayer = {
+  count: 34, narrowCount: 16, size: [2, 4], alpha: [0.25, 0.55], rise: [4, 9],
+  sway: 8, parallax: 0.15, soft: 0.6, colors: MOTE_COLORS,
+}
+const MOTES_MID: MoteLayer = {
+  count: 18, narrowCount: 9, size: [3, 6.5], alpha: [0.35, 0.8], rise: [8, 16],
+  sway: 14, parallax: 0.45, soft: 0.35, colors: MOTE_COLORS,
+}
+const MOTES_NEAR: MoteLayer = {
+  count: 7, narrowCount: 0, size: [14, 30], alpha: [0.05, 0.11], rise: [12, 22],
+  sway: 24, parallax: 1.35, soft: 1, colors: ['197, 200, 245'],
+}
+const HERO_DUST: MoteLayer = {
+  count: 16, narrowCount: 8, size: [1.5, 3.5], alpha: [0.12, 0.3], rise: [3, 7],
+  sway: 10, parallax: 0.3, soft: 0.5, colors: [INK_RGB],
+}
+
 /* Far wings on scroll: they rise at this share of the hero scroll (slow, so they settle
    just above the middle of the screen) and recede to FAR_RECEDE scale as they do. */
 const FAR_DRIFT = 0.12
@@ -248,6 +274,7 @@ function DragArt({
   returnAfter,
   onHot,
   className,
+  glint,
   children,
 }: {
   /** The art's image, read for the line-only hit test. */
@@ -267,6 +294,8 @@ function DragArt({
   returnAfter?: number
   onHot?: (hot: boolean) => void
   className?: string
+  /** A light layer over the art that travels with it but is not dimmed by `opacity`. */
+  glint?: React.ReactNode
   children: React.ReactNode
 }) {
   const ref = useRef<HTMLDivElement | null>(null)
@@ -396,6 +425,7 @@ function DragArt({
   }, [hint, enabled, calm, rotate])
 
   const lifted = enabled && (hot || held)
+  const artOpacity = opacity === undefined ? undefined : lifted ? Math.min(1, opacity * DRAG_LIFT) : opacity
 
   return (
     <>
@@ -462,14 +492,23 @@ function DragArt({
           x,
           y,
           rotate,
-          opacity: opacity === undefined ? undefined : lifted ? Math.min(1, opacity * DRAG_LIFT) : opacity,
+          // With a glint the art's own wrapper takes the opacity, so the light stays bright.
+          opacity: glint || opacity === undefined ? undefined : artOpacity,
           transition: 'opacity .4s ease',
+          position: glint ? 'relative' : undefined,
           pointerEvents: lifted ? 'auto' : 'none',
           cursor: lifted ? (held ? 'grabbing' : 'grab') : undefined,
           touchAction: 'none',
         }}
       >
-        {children}
+        {glint ? (
+          <>
+            <div style={{ height: '100%', opacity: artOpacity, transition: 'opacity .4s ease' }}>{children}</div>
+            {glint}
+          </>
+        ) : (
+          children
+        )}
       </motion.div>
     </>
   )
@@ -887,6 +926,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   const logoParRef = useRef<HTMLDivElement | null>(null)
   const wingsParRef = useRef<HTMLDivElement | null>(null)
   const farRef = useRef<HTMLDivElement | null>(null)
+  const groundRef = useRef<HTMLDivElement | null>(null)
   const workRef = useRef<HTMLElement | null>(null)
   const dragonRef = useRef<HTMLDivElement | null>(null)
   const swordRef = useRef<HTMLDivElement | null>(null)
@@ -1167,6 +1207,8 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
       far?.style.setProperty('--es', (1 - (1 - FAR_RECEDE) * (hy / (vh * 1.2))).toFixed(4))
 
       if (top === undefined) return
+      // The night's haze and shafts lag by shares of this.
+      groundRef.current?.style.setProperty('--ny', `${top.toFixed(1)}px`)
 
       // Wings sink under the dusk section: as its ground rises past the middle of the
       // screen they fade and go out of focus, like something seen through deep water.
@@ -1887,6 +1929,9 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             }}
           />
         </div>
+
+        {/* Faint plum dust drifting in the hero, behind everything in it */}
+        <MoteField region={heroRef} layer={HERO_DUST} fadeBottom={140} className="z-[1]" />
       </section>
 
       {/* ===== Far plane ===== A large, faint echo of the wings behind the whole page. Fixed to
@@ -1958,10 +2003,14 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
       >
         {/* Night ground — full-bleed, fading in from the paper over NIGHT_FADE. */}
         <div
+          ref={groundRef}
           aria-hidden="true"
           className="pointer-events-none absolute top-0 bottom-0 left-1/2 z-[21] w-screen -translate-x-1/2"
           style={{ background: NIGHT_GROUND }}
-        />
+        >
+          <NightAir fade={NIGHT_FADE} />
+        </div>
+        <MoteField region={workRef} layer={MOTES_FAR} fadeTop={nightFadePx} className="z-[21]" />
 
         {/* Background illustrations — full-bleed past the section's max width, clipped to
             its height, each drifting at its own speed (see the parallax effect). */}
@@ -1982,7 +2031,10 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
           >
             {/* Drag sits inside the parallax node: the scroll effect writes that node's
                 transform directly, so the two offsets add instead of overwriting. */}
-            <DragArt src={SVG.dragon.src} bounds={artLayerRef} bounce="viewport" enabled={canDrag} calm={reducedMotion} opacity={0.2} hint>
+            <DragArt src={SVG.dragon.src} bounds={artLayerRef} bounce="viewport" enabled={canDrag} calm={reducedMotion} opacity={0.2}
+              hint
+              glint={<Glint src={SVG.dragon.src} ratio={SVG.dragon.ratio} period={11} delay={3} />}
+            >
               <InkArt src={SVG.dragon.src} ratio={SVG.dragon.ratio} style={{ color: PAPER }} />
             </DragArt>
           </div>
@@ -2000,11 +2052,14 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
               opacity={0.22}
               hint
               className="h-full"
+              glint={<Glint src={SVG.sword.src} ratio={SVG.sword.ratio} fit="height" period={14} delay={8.5} />}
             >
               <InkArt src={SVG.sword.src} ratio={SVG.sword.ratio} fit="height" style={{ color: PAPER }} />
             </DragArt>
           </div>
         </div>
+
+        <MoteField region={workRef} layer={MOTES_MID} fadeTop={nightFadePx} className="z-[23]" />
 
         <div
           ref={register(0)}
@@ -2126,6 +2181,9 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             </a>
           </div>
         </div>
+
+        {/* Near plane: large out-of-focus motes in front of the cards */}
+        <MoteField region={workRef} layer={MOTES_NEAR} fadeTop={nightFadePx} className="z-[24]" />
       </section>
     </div>
   )
