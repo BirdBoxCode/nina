@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import type { SelectedWork } from '@/lib/sanity/queries'
@@ -12,7 +12,7 @@ import { INK_RGB, PALETTE, PIGMENT, PLANES } from '@/lib/palette'
 import { HomeIntro, useIntroOnce, type IntroLayout } from '@/components/HomeIntro'
 import { InkArt } from '@/components/InkArt'
 import { FlowerIcon, FlowerStrip } from '@/components/FlowerIcon'
-import { Glint, MoteField, NightAir, type MoteLayer } from '@/components/NightAtmosphere'
+import { Glint, MoteField, NightAir, type MoteLayer, type MoteRise } from '@/components/NightAtmosphere'
 
 /* Real-3D wordmark; WebGL, so client only. The flat PNG holds the layout until it is drawn. */
 const NinaroLogo3D = dynamic(() => import('@/components/NinaroLogo3D').then((m) => m.NinaroLogo3D), {
@@ -94,17 +94,21 @@ const nightFadePx = () => Math.min(420, Math.max(220, window.innerHeight * 0.38)
    sageMist; the dust is the ink. */
 const MOTE_COLORS = ['197, 200, 245', '197, 200, 245', '203, 204, 188']
 const MOTES_FAR: MoteLayer = {
-  count: 34, narrowCount: 16, size: [2, 4], alpha: [0.25, 0.55], rise: [4, 9],
-  sway: 8, parallax: 0.15, soft: 0.6, colors: MOTE_COLORS,
+  count: 30, narrowCount: 14, size: [7, 14], alpha: [0.35, 0.75], rise: [4, 9],
+  sway: 8, parallax: 0.15, soft: 0.35, colors: MOTE_COLORS, glow: true, flare: 0.5,
 }
 const MOTES_MID: MoteLayer = {
-  count: 18, narrowCount: 9, size: [3, 6.5], alpha: [0.35, 0.8], rise: [8, 16],
-  sway: 14, parallax: 0.45, soft: 0.35, colors: MOTE_COLORS,
+  count: 16, narrowCount: 8, size: [11, 22], alpha: [0.5, 1], rise: [8, 16],
+  sway: 14, parallax: 0.45, soft: 0.1, colors: MOTE_COLORS, glow: true, flare: 1,
 }
 const MOTES_NEAR: MoteLayer = {
-  count: 7, narrowCount: 0, size: [14, 30], alpha: [0.05, 0.11], rise: [12, 22],
-  sway: 24, parallax: 1.35, soft: 1, colors: ['197, 200, 245'],
+  count: 7, narrowCount: 0, size: [22, 40], alpha: [0.08, 0.16], rise: [12, 22],
+  sway: 24, parallax: 1.35, soft: 1, colors: ['197, 200, 245'], glow: true,
 }
+/* Far and mid motes rise on out of the night into the paper above as soft periwinkle-
+   violet haze (no core), thinning out within 200px past the visible edge: a hint of
+   what's below. */
+const NIGHT_RISE: MoteRise = { above: 200, color: '120, 125, 178', alpha: 0.9 }
 const HERO_DUST: MoteLayer = {
   count: 16, narrowCount: 8, size: [1.5, 3.5], alpha: [0.12, 0.3], rise: [3, 7],
   sway: 10, parallax: 0.3, soft: 0.5, colors: [INK_RGB],
@@ -930,6 +934,8 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   const workRef = useRef<HTMLElement | null>(null)
   const dragonRef = useRef<HTMLDivElement | null>(null)
   const swordRef = useRef<HTMLDivElement | null>(null)
+  // The thrown weapons, for the motes to answer. Refs are stable, so this list is too.
+  const weapons = useMemo(() => [dragonRef, swordRef], [])
   // Clip layer for the work-section art; also the bounds the art can be thrown within.
   const artLayerRef = useRef<HTMLDivElement | null>(null)
   // Mouse/trackpad only: on touch a drag would fight the page scroll.
@@ -2009,8 +2015,31 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
           style={{ background: NIGHT_GROUND }}
         >
           <NightAir fade={NIGHT_FADE} />
+          {/* Source glow: a soft periwinkle light along the night's top edge, slowly
+              swelling, so the motes rising out of it look lit from below. */}
+          <div
+            className="absolute inset-x-0"
+            style={{
+              top: `calc(${NIGHT_FADE} * .1)`,
+              height: `calc(${NIGHT_FADE} * 1.2)`,
+              background:
+                'radial-gradient(ellipse 60% 55% at 50% 72%, rgba(142, 151, 192, .3), transparent 72%), ' +
+                'radial-gradient(ellipse 30% 40% at 22% 78%, rgba(197, 200, 245, .14), transparent 70%), ' +
+                'radial-gradient(ellipse 28% 38% at 80% 76%, rgba(197, 200, 245, .12), transparent 70%)',
+              opacity: 0.7,
+              animation: 'nr-shaft 12s ease-in-out -4s infinite',
+            }}
+          />
         </div>
-        <MoteField region={workRef} layer={MOTES_FAR} fadeTop={nightFadePx} className="z-[21]" />
+        <MoteField
+          region={workRef}
+          layer={MOTES_FAR}
+          fadeTop={nightFadePx}
+          repel={weapons}
+          repelStrength={0.5}
+          rise={NIGHT_RISE}
+          className="z-[21]"
+        />
 
         {/* Background illustrations — full-bleed past the section's max width, clipped to
             its height, each drifting at its own speed (see the parallax effect). */}
@@ -2059,7 +2088,14 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
           </div>
         </div>
 
-        <MoteField region={workRef} layer={MOTES_MID} fadeTop={nightFadePx} className="z-[23]" />
+        <MoteField
+          region={workRef}
+          layer={MOTES_MID}
+          fadeTop={nightFadePx}
+          repel={weapons}
+          rise={NIGHT_RISE}
+          className="z-[23]"
+        />
 
         <div
           ref={register(0)}
@@ -2183,7 +2219,14 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
         </div>
 
         {/* Near plane: large out-of-focus motes in front of the cards */}
-        <MoteField region={workRef} layer={MOTES_NEAR} fadeTop={nightFadePx} className="z-[24]" />
+        <MoteField
+          region={workRef}
+          layer={MOTES_NEAR}
+          fadeTop={nightFadePx}
+          repel={weapons}
+          repelStrength={0.5}
+          className="z-[24]"
+        />
       </section>
     </div>
   )
