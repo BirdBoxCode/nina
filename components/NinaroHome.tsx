@@ -8,7 +8,7 @@ import { animate, motion, useDragControls, useMotionValue } from 'framer-motion'
 import { TransitionLink, useTransitionCovered, REVEAL_CLEAR_DELAY } from '@/components/PageTransition'
 import { NavBand, NavCrest, NAV_TRANSITION, navBarPad, navIconWidth, useScrolled } from '@/components/SideNav'
 import { liftShadow } from '@/lib/utils'
-import { PALETTE, PLANES } from '@/lib/palette'
+import { PALETTE, PIGMENT, PLANES } from '@/lib/palette'
 import { HomeIntro, useIntroOnce, type IntroLayout } from '@/components/HomeIntro'
 import { InkArt } from '@/components/InkArt'
 import { FlowerIcon, FlowerStrip } from '@/components/FlowerIcon'
@@ -45,15 +45,57 @@ const labelDepth = (i: number) => 10 + ((i * 5) % 13)
 
 /* --- Design tokens (organic: ink on paper, see lib/palette.ts) --- */
 const PAPER = PALETTE.paper
-const FRAME = PALETTE.paperDeep
 const INK = PALETTE.ink
 const MUTED = PALETTE.inkSoft
-const MUTED_LIGHT = PALETTE.inkMuted
 const DIMMED = PALETTE.inkFaint
 const RULE = PALETTE.rule
-const RULE_LIGHT = PALETTE.rule
-const BORDER = PALETTE.rule
 const ACCENT = PALETTE.ink
+
+/* Dusk section: Selected work sits on night violet, faded in from the paper so the hero's
+   wings sink behind it. Light text and beige line art on top. */
+const NIGHT_TEXT = PALETTE.paperLight
+const NIGHT_LABEL = PIGMENT.lavenderMist
+const NIGHT_RULE = 'rgba(197, 200, 245, .22)'
+/* How far the paper takes to turn to night at the top of the section. */
+const NIGHT_FADE = 'clamp(220px, 38vh, 420px)'
+/* The fade follows a smootherstep curve sampled finely: a few straight segments left
+   visible creases (bands) where each one met the next. */
+const NIGHT_GROUND = `linear-gradient(to bottom, ${Array.from({ length: 25 }, (_, i) => {
+  const t = i / 24
+  const a = t * t * t * (t * (t * 6 - 15) + 10)
+  return `rgba(47, 46, 69, ${a.toFixed(3)}) calc(${NIGHT_FADE} * ${t.toFixed(4)})`
+}).join(', ')})`
+/* Glass over the night: the far wings, dragon and sword blur as they pass behind it. */
+const GLASS: React.CSSProperties = {
+  backdropFilter: 'blur(16px) saturate(1.15)',
+  WebkitBackdropFilter: 'blur(16px) saturate(1.15)',
+}
+/* Card frames: frameNight (#3B3A55) as tinted glass, with a faint lit top edge. */
+const GLASS_FRAME: React.CSSProperties = {
+  ...GLASS,
+  background: 'rgba(59, 58, 85, .45)',
+  // Lit top edge and rim, plus a soft drop shadow so the cards lift off the night.
+  boxShadow:
+    'inset 0 1px 0 rgba(246, 243, 236, .08), inset 0 0 0 1px rgba(197, 200, 245, .07), 0 26px 50px -20px rgba(20, 19, 34, .6)',
+}
+/* Behind text: borderless glass, feathered at the edges so no pane shows. */
+const GLASS_HAZE: React.CSSProperties = {
+  ...GLASS,
+  WebkitMaskImage: 'radial-gradient(closest-side, #000 55%, transparent)',
+  maskImage: 'radial-gradient(closest-side, #000 55%, transparent)',
+}
+/* Far wings on scroll: they rise at this share of the hero scroll (slow, so they settle
+   just above the middle of the screen) and recede to FAR_RECEDE scale as they do. */
+const FAR_DRIFT = 0.12
+const FAR_RECEDE = 0.92
+/* Far wings: two copies that swap across the night's fade edge, --nt px down the screen. */
+const FAR_EDGE = [`calc(var(--nt) + ${NIGHT_FADE} * .35)`, `calc(var(--nt) + ${NIGHT_FADE} * .8)`]
+const FAR_TONES = [
+  { color: INK, alpha: PLANES.far.alpha, mask: `linear-gradient(to bottom, #000 ${FAR_EDGE[0]}, transparent ${FAR_EDGE[1]})` },
+  { color: PAPER, alpha: 0.1, mask: `linear-gradient(to bottom, transparent ${FAR_EDGE[0]}, #000 ${FAR_EDGE[1]})` },
+]
+/* Wings sinking under the night: at full cover they keep this much opacity and blur this many px. */
+const SINK = { alpha: 0.25, blur: 9 }
 
 /* --- Assets. Paths confirmed against /public by checksum against the handoff set. --- */
 const ART = {
@@ -844,7 +886,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   // Parallax layers, moved directly from a scroll frame (no re-render per frame).
   const logoParRef = useRef<HTMLDivElement | null>(null)
   const wingsParRef = useRef<HTMLDivElement | null>(null)
-  const echoParRef = useRef<HTMLDivElement | null>(null)
+  const farRef = useRef<HTMLDivElement | null>(null)
   const workRef = useRef<HTMLElement | null>(null)
   const dragonRef = useRef<HTMLDivElement | null>(null)
   const swordRef = useRef<HTMLDivElement | null>(null)
@@ -919,6 +961,8 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   const scrolled = useScrolled()
   // The hero's own logo covers the crest's job until most of the hero has scrolled away.
   const pastHero = useScrolled(() => window.innerHeight * 0.75)
+  // The bar turns to night once the dusk section's faded-in ground is under it.
+  const overNight = useScrolled(() => (workRef.current?.offsetTop ?? Infinity) + window.innerHeight * 0.3)
 
   // Below ~900px the scattered menu stacks into a centred column (same stagger).
   useEffect(() => {
@@ -1069,6 +1113,9 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
         const ny = away ? 0 : (e.clientY / window.innerHeight) * 2 - 1
         hero.style.setProperty('--nr-dx', nx.toFixed(3))
         hero.style.setProperty('--nr-dy', ny.toFixed(3))
+        // The far plane lives outside the hero, so it takes its own copy.
+        farRef.current?.style.setProperty('--nr-dx', nx.toFixed(3))
+        farRef.current?.style.setProperty('--nr-dy', ny.toFixed(3))
       })
     }
 
@@ -1089,8 +1136,10 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
 
   // Scroll parallax. Each layer's speed is relative to the page: 1 moves with it, 0 holds
   // still on screen. Transforms are written straight to the nodes once per frame.
+  // Reduced motion skips the movement but still tracks the night's edge for the far
+  // wings' colour, which is not motion.
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     let frame = 0
     const apply = () => {
@@ -1102,17 +1151,37 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
         if (el) el.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0)`
       }
 
+      const top = workRef.current?.getBoundingClientRect().top
+      const far = farRef.current
+      // The night's top edge, in px down the screen: the far wings turn beige below it.
+      far?.style.setProperty('--nt', `${(top ?? vh * 2).toFixed(1)}px`)
+      if (still) return
+
       // Hero: only while it is on screen.
       const hy = Math.min(window.scrollY, vh * 1.2)
       set(logoParRef.current, -hy * (PARALLAX.logo - 1) * soft)
       set(wingsParRef.current, hy * (1 - PARALLAX.wings) * soft)
-      set(echoParRef.current, hy * (1 - PLANES.far.scroll) * soft)
+      // Far plane: fixed to the screen, so it rises by its share of the hero scroll
+      // (gentler on phones), shrinking slightly as if it recedes, then holds.
+      far?.style.setProperty('--ey', `${(-hy * FAR_DRIFT * soft).toFixed(1)}px`)
+      far?.style.setProperty('--es', (1 - (1 - FAR_RECEDE) * (hy / (vh * 1.2))).toFixed(4))
+
+      if (top === undefined) return
+
+      // Wings sink under the dusk section: as its ground rises past the middle of the
+      // screen they fade and go out of focus, like something seen through deep water.
+      const cover = Math.min(1, Math.max(0, (vh * 0.85 - top) / (vh * 0.55)))
+      const sink = cover * cover * (3 - 2 * cover)
+      const obscure = (el: HTMLElement | null, alpha: number) => {
+        if (!el) return
+        el.style.opacity = (1 - (1 - alpha) * sink).toFixed(3)
+        el.style.filter = sink > 0.005 ? `blur(${(sink * SINK.blur).toFixed(2)}px)` : ''
+      }
+      obscure(wingsParRef.current, SINK.alpha)
 
       // Selected work. A layer at speed s lags the page by (1 - s) of the distance
       // scrolled past its anchor: both are anchored to the section entering at the
       // bottom, so they only drift down and never rise past the section's top edge.
-      const top = workRef.current?.getBoundingClientRect().top
-      if (top === undefined) return
       set(dragonRef.current, (1 - PARALLAX.dragon) * (vh - top))
       set(swordRef.current, (1 - PARALLAX.sword) * (vh - top))
     }
@@ -1347,7 +1416,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             transition: `padding-top ${NAV_TRANSITION}, ${DEPTH_EASE}`,
           }}
         >
-          <NavBand show={scrolled} />
+          <NavBand show={scrolled} dark={overNight} />
           <NavCrest compact show={pastHero && !menuOpen} />
           <button
             ref={menuBtnRef}
@@ -1383,47 +1452,21 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             onFocus={() => setTattooHot(true)}
             onBlur={() => setTattooHot(false)}
           >
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '18px', color: MUTED }}>Tattoo</span>
+            <span
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 600,
+                fontSize: '18px',
+                color: overNight ? NIGHT_LABEL : MUTED,
+                transition: `color ${NAV_TRANSITION}`,
+              }}
+            >
+              Tattoo
+            </span>
             <span className="block w-[26px]" aria-hidden="true">
               <FlowerIcon variant="purple" index={1} state={tattooHot ? 'hover' : 'closed'} />
             </span>
           </a>
-        </div>
-
-        {/* Far plane: a large, faint echo of the wings behind everything. It trails the page
-            and runs against the cursor harder than the wings do, so the layers part. */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-          <div ref={echoParRef} className="absolute inset-0" style={{ willChange: 'transform' }}>
-            <div
-              className="absolute left-1/2 top-1/2 flex items-center"
-              style={{
-                gap: `calc(${LOGO_W} * 0.9)`,
-                transform: 'translate(-50%, -30%)',
-                translate: depth(PLANES.far.cursor),
-                transition: DEPTH_EASE,
-                color: INK,
-              }}
-            >
-              {[SVG.wingLeft, SVG.wingRight].map((w, i) => (
-                <div
-                  key={w.src}
-                  className="shrink-0"
-                  style={{
-                    width: `calc(${LOGO_W} * 3.4)`,
-                    opacity: menuOpen ? PLANES.far.alpha * 0.5 : PLANES.far.alpha,
-                    transform: `translateY(${i ? 14 : 4}%) rotate(${i ? -7 : 7}deg)`,
-                    // Out of focus, as a far layer should be. Static, so it rasterises once.
-                    filter: 'blur(1.4px)',
-                    transition: 'opacity .8s ease',
-                  }}
-                >
-                  <div style={{ animation: `nr-ink-bloom 3.2s cubic-bezier(.33,1,.68,1) ${at(LOAD.wings + 0.9)} both` }}>
-                    <InkArt src={w.src} ratio={w.ratio} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Centre cluster — hovering the wordmark reveals the game entry beside it */}
@@ -1846,23 +1889,90 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
         </div>
       </section>
 
+      {/* ===== Far plane ===== A large, faint echo of the wings behind the whole page. Fixed to
+          the screen: it drifts up with the hero (--ey), then holds while the page passes over
+          it. Two copies swap at the night section's edge (--nt): plum ink on the paper, beige
+          on the night. It sits over the night ground and under the art and the cards, whose
+          glass blurs it as it passes behind them. */}
+      <div
+        ref={farRef}
+        aria-hidden="true"
+        data-hold={heroGo ? undefined : ''}
+        className="pointer-events-none fixed inset-0 z-[22] overflow-hidden"
+        style={{ '--nt': '200vh', '--ey': '0px', '--es': '1' } as React.CSSProperties}
+      >
+        {FAR_TONES.map((tone) => (
+          <div
+            key={tone.color}
+            className="absolute inset-0"
+            style={{ WebkitMaskImage: tone.mask, maskImage: tone.mask }}
+          >
+            <div className="absolute inset-0" style={{ transform: 'translate3d(0, var(--ey), 0) scale(var(--es))' }}>
+              <div
+                className="absolute left-1/2 top-1/2 flex items-center"
+                style={{
+                  gap: `calc(${LOGO_W} * 0.9)`,
+                  transform: 'translate(-50%, -30%)',
+                  translate: depth(PLANES.far.cursor),
+                  transition: DEPTH_EASE,
+                  color: tone.color,
+                }}
+              >
+                {[SVG.wingLeft, SVG.wingRight].map((w, i) => (
+                  <div
+                    key={w.src}
+                    className="shrink-0"
+                    style={{
+                      width: `calc(${LOGO_W} * 3.4)`,
+                      opacity: menuOpen ? tone.alpha * 0.5 : tone.alpha,
+                      transform: `translateY(${i ? 14 : 4}%) rotate(${i ? -7 : 7}deg)`,
+                      // Out of focus, as a far layer should be. Static, so it rasterises once.
+                      filter: 'blur(1.4px)',
+                      transition: 'opacity .8s ease',
+                    }}
+                  >
+                    <div style={{ animation: `nr-ink-bloom 3.2s cubic-bezier(.33,1,.68,1) ${at(LOAD.wings + 0.9)} both` }}>
+                      <InkArt src={w.src} ratio={w.ratio} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* ===== Selected work ===== */}
       <section
         ref={workRef}
-        // isolate: the illustration layer sits at z -1, behind the cards but above the paper.
-        className="relative isolate mx-auto max-w-[1500px]"
-        style={{ padding: 'clamp(60px, 9vw, 130px) clamp(22px, 5vw, 84px) 130px' }}
+        // No stacking context of its own: its layers interleave with the page's fixed far
+        // wings (z-22). Back to front: night ground 21 (over the hero's wings and logo at
+        // 20, so they sink behind it), far wings 22, art 23, content 24 — all under the
+        // menu labels (25), the top bar (30) and the grain (60).
+        // Top padding: the night fade first, then the design's own top space.
+        className="relative mx-auto max-w-[1500px]"
+        style={{
+          padding: `calc(${NIGHT_FADE} + clamp(40px, 5vw, 80px)) clamp(22px, 5vw, 84px) 130px`,
+          color: NIGHT_TEXT,
+        }}
       >
+        {/* Night ground — full-bleed, fading in from the paper over NIGHT_FADE. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-0 bottom-0 left-1/2 z-[21] w-screen -translate-x-1/2"
+          style={{ background: NIGHT_GROUND }}
+        />
+
         {/* Background illustrations — full-bleed past the section's max width, clipped to
             its height, each drifting at its own speed (see the parallax effect). */}
         <div
           ref={artLayerRef}
           aria-hidden="true"
-          className="pointer-events-none absolute top-0 bottom-0 left-1/2 z-[-1] w-screen -translate-x-1/2 overflow-hidden"
-          // Soft top edge: art meeting the clip fades into the paper instead of a hard cut.
+          className="pointer-events-none absolute top-0 bottom-0 left-1/2 z-[23] w-screen -translate-x-1/2 overflow-hidden"
+          // Soft top edge: the beige art surfaces as the night comes in, instead of a hard cut.
           style={{
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 120px)',
-            maskImage: 'linear-gradient(to bottom, transparent 0, #000 120px)',
+            WebkitMaskImage: `linear-gradient(to bottom, transparent calc(${NIGHT_FADE} * .3), #000 ${NIGHT_FADE})`,
+            maskImage: `linear-gradient(to bottom, transparent calc(${NIGHT_FADE} * .3), #000 ${NIGHT_FADE})`,
           }}
         >
           <div
@@ -1872,8 +1982,8 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
           >
             {/* Drag sits inside the parallax node: the scroll effect writes that node's
                 transform directly, so the two offsets add instead of overwriting. */}
-            <DragArt src={SVG.dragon.src} bounds={artLayerRef} bounce="viewport" enabled={canDrag} calm={reducedMotion} opacity={0.14} hint>
-              <InkArt src={SVG.dragon.src} ratio={SVG.dragon.ratio} style={{ color: INK }} />
+            <DragArt src={SVG.dragon.src} bounds={artLayerRef} bounce="viewport" enabled={canDrag} calm={reducedMotion} opacity={0.2} hint>
+              <InkArt src={SVG.dragon.src} ratio={SVG.dragon.ratio} style={{ color: PAPER }} />
             </DragArt>
           </div>
           <div
@@ -1887,11 +1997,11 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
               bounce="viewport"
               enabled={canDrag}
               calm={reducedMotion}
-              opacity={0.16}
+              opacity={0.22}
               hint
               className="h-full"
             >
-              <InkArt src={SVG.sword.src} ratio={SVG.sword.ratio} fit="height" style={{ color: INK }} />
+              <InkArt src={SVG.sword.src} ratio={SVG.sword.ratio} fit="height" style={{ color: PAPER }} />
             </DragArt>
           </div>
         </div>
@@ -1899,9 +2009,11 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
         <div
           ref={register(0)}
           data-reveal-index={0}
-          className="flex items-baseline gap-[18px]"
+          className="relative z-[24] flex items-baseline gap-[18px]"
           style={{ marginBottom: 'clamp(38px, 5vw, 70px)', ...revealStyle(0, 1.1, 22) }}
         >
+          {/* Glass behind the text: whatever passes behind blurs, as through frosted glass */}
+          <span aria-hidden="true" className="pointer-events-none absolute -inset-x-8 -inset-y-6 -z-10" style={GLASS_HAZE} />
           <h2
             className="m-0"
             style={{
@@ -1910,22 +2022,22 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
               fontWeight: 500,
               letterSpacing: '.04em',
               textTransform: 'uppercase',
-              color: INK,
+              color: NIGHT_TEXT,
             }}
           >
             {selectedWork?.heading ?? 'Selected work'}
           </h2>
           <span
             className="flex-1 h-px"
-            style={{ background: `linear-gradient(to right, ${RULE_LIGHT} 0 60%, transparent)` }}
+            style={{ background: `linear-gradient(to right, ${NIGHT_RULE} 0 60%, transparent)` }}
           />
-          <span style={{ fontSize: '10.5px', letterSpacing: '.24em', textTransform: 'uppercase', color: MUTED_LIGHT }}>
+          <span style={{ fontSize: '10.5px', letterSpacing: '.24em', textTransform: 'uppercase', color: NIGHT_LABEL }}>
             {selectedWork?.years ?? '2021 — 2026'}
           </span>
         </div>
 
         <div
-          className="grid grid-cols-12"
+          className="relative z-[24] grid grid-cols-12"
           style={{ gap: 'clamp(20px, 3vw, 56px) clamp(20px, 2.6vw, 44px)' }}
         >
           {works.map((w, i) => (
@@ -1940,7 +2052,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                 {/* Frame stays an empty placeholder until a card image is set in Sanity */}
                 <div
                   className="relative overflow-hidden"
-                  style={{ aspectRatio: w.ratio, background: FRAME }}
+                  style={{ aspectRatio: w.ratio, ...GLASS_FRAME }}
                 >
                   {w.image && (
                     <Image
@@ -1953,9 +2065,10 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                     />
                   )}
                 </div>
-                <div className="flex items-baseline justify-between gap-4 pt-[13px]">
+                <div className="relative flex items-baseline justify-between gap-4 pt-[13px]">
+                  <span aria-hidden="true" className="pointer-events-none absolute -inset-x-6 -bottom-4 top-0 -z-10" style={GLASS_HAZE} />
                   <span
-                    className="transition-colors duration-300 group-hover:text-[#4D4560]"
+                    className="transition-colors duration-300 group-hover:text-[#C5C8F5]"
                     style={{
                       fontFamily: 'var(--font-sans)',
                       fontWeight: 500,
@@ -1966,7 +2079,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
                   >
                     {w.title}
                   </span>
-                  <span style={{ fontSize: '10px', letterSpacing: '.2em', textTransform: 'uppercase', color: MUTED_LIGHT }}>
+                  <span style={{ fontSize: '10px', letterSpacing: '.2em', textTransform: 'uppercase', color: NIGHT_LABEL }}>
                     {w.cat}
                   </span>
                 </div>
@@ -1978,13 +2091,15 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
         <div
           ref={register(works.length + 1)}
           data-reveal-index={works.length + 1}
-          className="flex flex-wrap items-center justify-between gap-6 pt-[26px]"
+          className="relative z-[24] flex flex-wrap items-center justify-between gap-6 pt-[26px]"
           style={{
             marginTop: 'clamp(70px, 9vw, 140px)',
-            borderTop: `1px solid ${BORDER}`,
+            borderTop: `1px solid ${NIGHT_RULE}`,
             ...revealStyle(works.length + 1, 1.1, 22),
           }}
         >
+          {/* Glass behind the text: whatever passes behind blurs, as through frosted glass */}
+          <span aria-hidden="true" className="pointer-events-none absolute -inset-x-8 -inset-y-6 -z-10" style={GLASS_HAZE} />
           <Image
             src={ART.ninaro}
             alt="NINARÒ"
@@ -1994,17 +2109,17 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
             style={{ width: 'clamp(78px, 8vw, 104px)' }}
           />
           <div className="flex gap-7">
-            <TransitionLink href="/bio-contact" className="hover:text-[#4D4560]" style={MICRO}>
+            <TransitionLink href="/bio-contact" className="hover:text-[#C5C8F5]" style={MICRO}>
               About
             </TransitionLink>
-            <TransitionLink href="/shop" className="hover:text-[#4D4560]" style={MICRO}>
+            <TransitionLink href="/shop" className="hover:text-[#C5C8F5]" style={MICRO}>
               Shop
             </TransitionLink>
             <a
               href="https://lineacruda.com"
               target="_blank"
               rel="noopener"
-              className="hover:text-[#4D4560]"
+              className="hover:text-[#C5C8F5]"
               style={MICRO}
             >
               Tattoos ↗

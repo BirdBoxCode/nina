@@ -78,20 +78,21 @@ export const NAV_TRANSITION = `.5s ${EASE}`
  * to fade out at its lower edge so scrolled content slips under it without a hard line.
  * Sits inside the fixed bar; the bar's own children must be `relative` to paint above it.
  */
-export function NavBand({ show }: { show: boolean }) {
+export function NavBand({ show, dark = false }: { show: boolean; dark?: boolean }) {
   return (
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-x-0 top-0"
       style={{
         height: BAND_H,
-        background: 'rgba(239, 235, 226, .86)',
+        // dark: night violet, for when a dark section sits under the bar
+        background: dark ? 'rgba(47, 46, 69, .86)' : 'rgba(239, 235, 226, .86)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
         maskImage: 'linear-gradient(to bottom, #000 72%, transparent)',
         WebkitMaskImage: 'linear-gradient(to bottom, #000 72%, transparent)',
         opacity: show ? 1 : 0,
-        transition: `opacity ${NAV_TRANSITION}`,
+        transition: `opacity ${NAV_TRANSITION}, background-color ${NAV_TRANSITION}`,
       }}
     />
   )
