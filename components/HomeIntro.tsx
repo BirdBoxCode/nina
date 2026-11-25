@@ -94,11 +94,15 @@ export function HomeIntro({
   const onOpenRef = useRef(onOpen)
   const measureRef = useRef(measure)
   const rolesCopyRef = useRef<HTMLParagraphElement | null>(null)
+  // Read by the per-frame loops below, which stop once the intro is gone: they measure the
+  // hero every frame (forcing layout), and left running they stalled scrolling all visit.
+  const goneRef = useRef(false)
 
   useEffect(() => {
     progressRef.current = progress
     onOpenRef.current = onOpen
     measureRef.current = measure
+    goneRef.current = phase === 'gone'
   })
 
   // Place the imprint, name and role over their hero counterparts, checked every frame:
@@ -121,6 +125,7 @@ export function HomeIntro({
       )
     }
     const check = () => {
+      if (goneRef.current) return
       const next = measureRef.current()
       if (next && moved(next, last)) {
         last = next
@@ -136,6 +141,7 @@ export function HomeIntro({
   useEffect(() => {
     let frame = 0
     const follow = () => {
+      if (goneRef.current) return
       const src = rolesEl.current?.getBoundingClientRect()
       const copy = rolesCopyRef.current
       if (src && copy) {

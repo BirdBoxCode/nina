@@ -164,10 +164,25 @@
   50%  { transform: translate(5%, 2%); }
   100% { transform: translate(-2%, 4%); }
 }
-/* Glint: a light band crosses the art in the first part of the cycle, then rests. */
+/* Glint: a light band crosses the art in the first part of the cycle, then rests. The
+   band slides by transform under a fixed mask of the art, so nothing is redrawn. */
 @keyframes nr-glint {
-  0%        { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
-  16%, 100% { -webkit-mask-position: 0% 0;   mask-position: 0% 0; }
+  0%        { transform: translateX(-100%); }
+  16%, 100% { transform: translateX(100%); }
+}
+
+/* Scroll parallax run by the browser on the scroll itself, so it can never lag a frame
+   behind it. The JS sets --p0 and --p1 (the offsets at the top and bottom of the page)
+   on layout changes only; browsers without scroll timelines keep the JS per-frame path. */
+@keyframes nr-par {
+  from { transform: translate3d(0, var(--p0, 0px), 0); }
+  to   { transform: translate3d(0, var(--p1, 0px), 0); }
+}
+@supports (animation-timeline: scroll()) {
+  .nr-home .nr-scroll-par {
+    animation: nr-par linear both;
+    animation-timeline: scroll(root block);
+  }
 }
 
 @keyframes nr-ink-bloom {

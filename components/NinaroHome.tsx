@@ -94,15 +94,15 @@ const nightFadePx = () => Math.min(420, Math.max(220, window.innerHeight * 0.38)
    sageMist; the dust is the ink. */
 const MOTE_COLORS = ['197, 200, 245', '197, 200, 245', '203, 204, 188']
 const MOTES_FAR: MoteLayer = {
-  count: 30, narrowCount: 14, size: [7, 14], alpha: [0.35, 0.75], rise: [4, 9],
+  count: 22, narrowCount: 10, size: [7, 14], alpha: [0.35, 0.75], rise: [4, 9],
   sway: 8, parallax: 0.15, soft: 0.35, colors: MOTE_COLORS, glow: true, flare: 0.5,
 }
 const MOTES_MID: MoteLayer = {
-  count: 16, narrowCount: 8, size: [11, 22], alpha: [0.5, 1], rise: [8, 16],
+  count: 12, narrowCount: 6, size: [11, 22], alpha: [0.5, 1], rise: [8, 16],
   sway: 14, parallax: 0.45, soft: 0.1, colors: MOTE_COLORS, glow: true, flare: 1,
 }
 const MOTES_NEAR: MoteLayer = {
-  count: 7, narrowCount: 0, size: [22, 40], alpha: [0.08, 0.16], rise: [12, 22],
+  count: 5, narrowCount: 0, size: [22, 40], alpha: [0.08, 0.16], rise: [12, 22],
   sway: 24, parallax: 1.35, soft: 1, colors: ['197, 200, 245'], glow: true,
 }
 /* Far and mid motes rise on out of the night into the paper above as soft periwinkle-
@@ -258,6 +258,8 @@ const HIT_TOLERANCE = 9
 const HIT_ALPHA = 24
 /* One loose wobble the first time the art scrolls into view: a hint it can be moved. */
 const WOBBLE = [0, -2.2, 1.6, -0.8, 0]
+/* Hover on the art is only re-checked once scrolling has been still this long (ms). */
+const SCROLL_SETTLE = 150
 /* Hero wings: thrown within the hero, then home after this long. */
 const WING_RETURN = 2000
 
@@ -392,9 +394,21 @@ function DragArt({
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(update)
     }
+    // While the page scrolls, lines sliding under a resting cursor would flick the art
+    // lit and unlit (and force a hit test each frame), which read as a stutter. So the
+    // state holds while scrolling, and is checked once when the scroll settles.
+    let scrolling: ReturnType<typeof setTimeout> | null = null
+    const onScroll = () => {
+      if (scrolling) clearTimeout(scrolling)
+      scrolling = setTimeout(() => {
+        scrolling = null
+        schedule()
+      }, SCROLL_SETTLE)
+    }
     const onMove = (e: PointerEvent) => {
       last = { x: e.clientX, y: e.clientY }
-      schedule()
+      // Browsers may send synthetic moves during a scroll; those wait for it to settle too.
+      if (!scrolling) schedule()
     }
     const onLeave = () => {
       last = null
@@ -402,12 +416,13 @@ function DragArt({
     }
 
     window.addEventListener('pointermove', onMove, { passive: true })
-    window.addEventListener('scroll', schedule, { passive: true })
+    window.addEventListener('scroll', onScroll, { passive: true })
     document.documentElement.addEventListener('pointerleave', onLeave)
     return () => {
       cancelAnimationFrame(frame)
+      if (scrolling) clearTimeout(scrolling)
       window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('scroll', schedule)
+      window.removeEventListener('scroll', onScroll)
       document.documentElement.removeEventListener('pointerleave', onLeave)
     }
   }, [enabled])
@@ -1186,6 +1201,10 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
   // wings' colour, which is not motion.
   useEffect(() => {
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    // The dragon and sword are moved by the browser on the scroll itself where scroll
+    // timelines exist (see .nr-scroll-par); per-frame JS lags the scroll by a frame, and
+    // at the sword's speed that showed as a stutter. Elsewhere they stay on this path.
+    const cssPar = CSS.supports('animation-timeline: scroll()')
 
     let frame = 0
     const apply = () => {
@@ -1230,11 +1249,40 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
       // Selected work. A layer at speed s lags the page by (1 - s) of the distance
       // scrolled past its anchor: both are anchored to the section entering at the
       // bottom, so they only drift down and never rise past the section's top edge.
-      set(dragonRef.current, (1 - PARALLAX.dragon) * (vh - top))
-      set(swordRef.current, (1 - PARALLAX.sword) * (vh - top))
+      if (!cssPar) {
+        set(dragonRef.current, (1 - PARALLAX.dragon) * (vh - top))
+        set(swordRef.current, (1 - PARALLAX.sword) * (vh - top))
+      }
     }
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(apply)
+    }
+
+    // Scroll-timeline path: the same offset, (1 - s) * (vh - top), is linear in scrollY,
+    // so it is set once as its values at the top (--p0) and bottom (--p1) of the page.
+    // Only layout changes (resize, content height) need it measured again.
+    const measure = () => {
+      const work = workRef.current
+      if (!work) return
+      const vh = window.innerHeight
+      const anchor = work.getBoundingClientRect().top + window.scrollY
+      const max = Math.max(0, document.documentElement.scrollHeight - vh)
+      const pairs: [HTMLElement | null, number][] = [
+        [dragonRef.current, PARALLAX.dragon],
+        [swordRef.current, PARALLAX.sword],
+      ]
+      for (const [el, speed] of pairs) {
+        if (!el) continue
+        const k = 1 - speed
+        el.style.setProperty('--p0', `${(k * (vh - anchor)).toFixed(1)}px`)
+        el.style.setProperty('--p1', `${(k * (vh - anchor + max)).toFixed(1)}px`)
+      }
+    }
+    const layout = cssPar && !still ? new ResizeObserver(() => measure()) : null
+    if (layout) {
+      measure()
+      layout.observe(document.body)
+      window.addEventListener('resize', measure)
     }
 
     apply()
@@ -1242,6 +1290,8 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
     window.addEventListener('resize', schedule)
     return () => {
       cancelAnimationFrame(frame)
+      layout?.disconnect()
+      window.removeEventListener('resize', measure)
       window.removeEventListener('scroll', schedule)
       window.removeEventListener('resize', schedule)
     }
@@ -2055,21 +2105,21 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
         >
           <div
             ref={dragonRef}
-            className="absolute"
+            className="nr-scroll-par absolute"
             style={{ top: 'clamp(40px, 6vw, 110px)', left: '-4vw', width: '40vw', willChange: 'transform' }}
           >
             {/* Drag sits inside the parallax node: the scroll effect writes that node's
                 transform directly, so the two offsets add instead of overwriting. */}
             <DragArt src={SVG.dragon.src} bounds={artLayerRef} bounce="viewport" enabled={canDrag} calm={reducedMotion} opacity={0.2}
               hint
-              glint={<Glint src={SVG.dragon.src} ratio={SVG.dragon.ratio} period={11} delay={3} />}
+              glint={<Glint src={SVG.dragon.src} period={11} delay={3} />}
             >
               <InkArt src={SVG.dragon.src} ratio={SVG.dragon.ratio} style={{ color: PAPER }} />
             </DragArt>
           </div>
           <div
             ref={swordRef}
-            className="absolute top-0"
+            className="nr-scroll-par absolute top-0"
             style={{ right: '-4vw', height: narrow ? '60vh' : '90vh', willChange: 'transform' }}
           >
             <DragArt
@@ -2081,7 +2131,7 @@ export function NinaroHome({ selectedWork }: { selectedWork?: SelectedWork | nul
               opacity={0.22}
               hint
               className="h-full"
-              glint={<Glint src={SVG.sword.src} ratio={SVG.sword.ratio} fit="height" period={14} delay={8.5} />}
+              glint={<Glint src={SVG.sword.src} period={14} delay={8.5} />}
             >
               <InkArt src={SVG.sword.src} ratio={SVG.sword.ratio} fit="height" style={{ color: PAPER }} />
             </DragArt>
