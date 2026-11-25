@@ -26,6 +26,8 @@ export const PIGMENT = {
   plumInk: '#4D4560',
   /** The dark (dusk) section. */
   nightViolet: '#2F2E45',
+  /** Empty frames on the dark section: night violet lifted a step. */
+  frameNight: '#3B3A55',
   /** Greyed sage, like the icons. */
   sageMist: '#CBCCBC',
   /** The green-icon petals. */
