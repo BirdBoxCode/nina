@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
-import { InkArt } from '@/components/InkArt'
 
 /**
  * Atmosphere for the home page's night (dusk) section, in the pigment palette:
@@ -309,7 +308,12 @@ export function MoteField({
     // Light motes add up where they overlap, as light does.
     const blend: GlobalCompositeOperation = layer.glow ? 'lighter' : 'source-over'
     // Each repeller's last drag offset (centre, px) and smoothed velocity (px/s).
-    const movers = (repel ?? []).map(() => ({ x: 0, y: 0, vx: 0, vy: 0, seen: false }))
+    // `tf` is the art's inline transform last frame: reading it costs no layout, so the
+    // box is only measured on frames where the art has actually moved.
+    const movers = (repel ?? []).map(() => ({
+      x: 0, y: 0, vx: 0, vy: 0, seen: false, tf: '',
+      box: { l: 0, t: 0, r: 0, b: 0, cx: 0, cy: 0 },
+    }))
 
     let motes: Mote[] = []
     let w = 0
@@ -352,14 +356,23 @@ export function MoteField({
       const out: { l: number; t: number; r: number; b: number; cx: number; cy: number; vx: number; vy: number }[] = []
       repel?.forEach((ref, i) => {
         const wrap = ref.current
-        const art = wrap?.firstElementChild
+        const art = wrap?.firstElementChild as HTMLElement | null | undefined
         if (!wrap || !art) return
+        const m = movers[i]
+        if (m.seen && art.style.transform === m.tf) {
+          // Not moved since last frame: let the velocity die away, and reuse the box.
+          m.vx *= 0.6
+          m.vy *= 0.6
+          if (Math.hypot(m.vx, m.vy) < REPEL.minSpeed) return
+          out.push({ ...m.box, vx: m.vx, vy: m.vy })
+          return
+        }
+        m.tf = art.style.transform
         const a = art.getBoundingClientRect()
         const wr = wrap.getBoundingClientRect()
         // Centres, so the hover lift's scale (about the centre) reads as no movement.
         const x = a.left + a.width / 2 - (wr.left + wr.width / 2)
         const y = a.top + a.height / 2 - (wr.top + wr.height / 2)
-        const m = movers[i]
         if (m.seen && dt > 0) {
           m.vx = m.vx * 0.6 + ((x - m.x) / dt) * 0.4
           m.vy = m.vy * 0.6 + ((y - m.y) / dt) * 0.4
@@ -367,12 +380,9 @@ export function MoteField({
         m.x = x
         m.y = y
         m.seen = true
+        m.box = { l: a.left, t: a.top, r: a.right, b: a.bottom, cx: a.left + a.width / 2, cy: a.top + a.height / 2 }
         if (Math.hypot(m.vx, m.vy) < REPEL.minSpeed) return
-        out.push({
-          l: a.left, t: a.top, r: a.right, b: a.bottom,
-          cx: a.left + a.width / 2, cy: a.top + a.height / 2,
-          vx: m.vx, vy: m.vy,
-        })
+        out.push({ ...m.box, vx: m.vx, vy: m.vy })
       })
       return out
     }
@@ -521,45 +531,47 @@ export function MoteField({
 
 /**
  * A narrow band of light that crosses a line drawing every `period` seconds, lighting
- * only its lines (the art is drawn again, light, under a moving mask). Fills its
- * positioned parent, which must be the art's own box.
+ * only its lines. The drawing is a fixed mask (the art file itself) and the band slides
+ * under it by transform, which the browser composites without redrawing the art. Fills
+ * its positioned parent, which must be the art's own box.
  */
 export function Glint({
   src,
-  ratio,
-  fit = 'width',
   period,
   delay,
   strength = 0.6,
 }: {
   src: string
-  ratio: number
-  fit?: 'width' | 'height'
   period: number
   delay: number
   strength?: number
 }) {
-  const mask = 'linear-gradient(105deg, transparent 42%, #000 50%, transparent 58%)'
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0"
+      className="pointer-events-none absolute inset-0 overflow-hidden"
       style={{
-        color: '#FFFFFF',
         opacity: strength,
-        WebkitMaskImage: mask,
-        maskImage: mask,
-        WebkitMaskSize: '300% 100%',
-        maskSize: '300% 100%',
+        WebkitMaskImage: `url("${src}")`,
+        maskImage: `url("${src}")`,
+        WebkitMaskSize: 'contain',
+        maskSize: 'contain',
         WebkitMaskRepeat: 'no-repeat',
         maskRepeat: 'no-repeat',
-        // Parked off the art: where it rests when motion is reduced.
-        WebkitMaskPosition: '100% 0',
-        maskPosition: '100% 0',
-        animation: `nr-glint ${period}s ease-in-out ${delay}s infinite`,
+        WebkitMaskPosition: 'center',
+        maskPosition: 'center',
       }}
     >
-      <InkArt src={src} ratio={ratio} fit={fit} />
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(105deg, transparent 42%, #FFFFFF 50%, transparent 58%)',
+          // Parked off the art: where it rests when motion is reduced.
+          transform: 'translateX(-100%)',
+          willChange: 'transform',
+          animation: `nr-glint ${period}s ease-in-out ${delay}s infinite`,
+        }}
+      />
     </div>
   )
 }
